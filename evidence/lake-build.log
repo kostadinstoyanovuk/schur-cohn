@@ -1,0 +1,5 @@
+ℹ [1182/1184] Built SchurCohn.Smoke (3.2s)
+info: SchurCohn/Smoke.lean:20:0: 'SchurCohn.polynomial_smoke' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: SchurCohn/Smoke.lean:21:0: 'SchurCohn.arithmetic_smoke' does not depend on any axioms
+✔ [1183/1184] Built SchurCohn (3.1s)
+Build completed successfully (1184 jobs).

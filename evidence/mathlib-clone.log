@@ -1,0 +1,98 @@
+Cloning into '<workspace>/.lake/packages/mathlib'...
+Note: switching to '905b95818eb32af7874a58b427f50c1711a5e96c'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+Updating files:  24% (2203/8972)
+Updating files:  25% (2243/8972)
+Updating files:  26% (2333/8972)
+Updating files:  27% (2423/8972)
+Updating files:  28% (2513/8972)
+Updating files:  29% (2602/8972)
+Updating files:  30% (2692/8972)
+Updating files:  31% (2782/8972)
+Updating files:  32% (2872/8972)
+Updating files:  33% (2961/8972)
+Updating files:  34% (3051/8972)
+Updating files:  35% (3141/8972)
+Updating files:  36% (3230/8972)
+Updating files:  37% (3320/8972)
+Updating files:  38% (3410/8972)
+Updating files:  39% (3500/8972)
+Updating files:  40% (3589/8972)
+Updating files:  41% (3679/8972)
+Updating files:  42% (3769/8972)
+Updating files:  43% (3858/8972)
+Updating files:  44% (3948/8972)
+Updating files:  45% (4038/8972)
+Updating files:  46% (4128/8972)
+Updating files:  47% (4217/8972)
+Updating files:  48% (4307/8972)
+Updating files:  49% (4397/8972)
+Updating files:  50% (4486/8972)
+Updating files:  50% (4560/8972)
+Updating files:  51% (4576/8972)
+Updating files:  52% (4666/8972)
+Updating files:  53% (4756/8972)
+Updating files:  54% (4845/8972)
+Updating files:  55% (4935/8972)
+Updating files:  56% (5025/8972)
+Updating files:  57% (5115/8972)
+Updating files:  58% (5204/8972)
+Updating files:  59% (5294/8972)
+Updating files:  60% (5384/8972)
+Updating files:  61% (5473/8972)
+Updating files:  62% (5563/8972)
+Updating files:  63% (5653/8972)
+Updating files:  64% (5743/8972)
+Updating files:  65% (5832/8972)
+Updating files:  66% (5922/8972)
+Updating files:  67% (6012/8972)
+Updating files:  68% (6101/8972)
+Updating files:  69% (6191/8972)
+Updating files:  70% (6281/8972)
+Updating files:  71% (6371/8972)
+Updating files:  72% (6460/8972)
+Updating files:  73% (6550/8972)
+Updating files:  74% (6640/8972)
+Updating files:  75% (6729/8972)
+Updating files:  75% (6759/8972)
+Updating files:  76% (6819/8972)
+Updating files:  77% (6909/8972)
+Updating files:  78% (6999/8972)
+Updating files:  79% (7088/8972)
+Updating files:  80% (7178/8972)
+Updating files:  81% (7268/8972)
+Updating files:  82% (7358/8972)
+Updating files:  83% (7447/8972)
+Updating files:  84% (7537/8972)
+Updating files:  85% (7627/8972)
+Updating files:  86% (7716/8972)
+Updating files:  87% (7806/8972)
+Updating files:  88% (7896/8972)
+Updating files:  89% (7986/8972)
+Updating files:  90% (8075/8972)
+Updating files:  91% (8165/8972)
+Updating files:  92% (8255/8972)
+Updating files:  93% (8344/8972)
+Updating files:  94% (8434/8972)
+Updating files:  95% (8524/8972)
+Updating files:  96% (8614/8972)
+Updating files:  97% (8703/8972)
+Updating files:  98% (8793/8972)
+Updating files:  99% (8883/8972)
+Updating files: 100% (8972/8972)
+Updating files: 100% (8972/8972), done.
