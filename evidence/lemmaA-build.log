@@ -1,0 +1,6 @@
+lake build, 2026-09-27, Windows, Lean v4.32.2, mathlib 905b95818eb32af7874a58b427f50c1711a5e96c
+[1577/1579] Built SchurCohn.LemmaA (3.0s)
+info: SchurCohn/LemmaA.lean:36:0: 'SchurCohn.lemmaA_normSq' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: SchurCohn/LemmaA.lean:37:0: 'SchurCohn.lemmaA' depends on axioms: [propext, Classical.choice, Quot.sound]
+Build completed successfully (1579 jobs).
+build exit 0

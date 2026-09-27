@@ -11,7 +11,7 @@ $previousProcessPath = $env:PATH
 $env:PATH = (Split-Path -Parent $lakeExe) + [IO.Path]::PathSeparator + $env:PATH
 Push-Location -LiteralPath $repoDir
 try {
-    & $lakeExe exe cache get Mathlib.Algebra.Polynomial.Eval.Defs 2>&1 |
+    & $lakeExe exe cache get Mathlib.Algebra.Polynomial.Eval.Defs Mathlib.Analysis.Complex.Norm 2>&1 |
         Tee-Object -FilePath 'evidence/cache-get.log'
     if ($LASTEXITCODE -ne 0) { throw 'Selective mathlib cache failed' }
     & $lakeExe build 2>&1 | Tee-Object -FilePath 'evidence/lake-build.log'

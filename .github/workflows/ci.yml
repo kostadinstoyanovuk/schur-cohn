@@ -17,5 +17,7 @@ jobs:
           lint: 'false'
           use-mathlib-cache: 'false'
           use-github-cache: 'false'
-      - run: lake exe cache get Mathlib.Algebra.Polynomial.Eval.Defs
+      - run: lake exe cache get Mathlib.Algebra.Polynomial.Eval.Defs Mathlib.Analysis.Complex.Norm
       - run: lake build
+      - name: No sorry in project sources
+        run: "! grep -rnw --include='*.lean' sorry SchurCohn SchurCohn.lean"
