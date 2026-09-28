@@ -1,0 +1,972 @@
+% C4.B blueprint content.
+% Plan references are to Unit_Circle_Programme_Plan_Working_Edition.pdf
+% (SHA-256 c195cea607312663328c6df67af916540147117e31a9ad7273c8717e6f5b3b5a),
+% cited as "plan p. N".
+%
+% Status markers follow leanblueprint: \leanok on a statement or proof means that
+% statement or proof is formalised without sorry; \mathlibok marks a node that
+% is an existing mathlib declaration. Only Lemma A carries \leanok: it is proved
+% in schur-cohn at a907f99. Every other \lean{...} name below is a PROPOSED name
+% that does not yet exist anywhere.
+
+\chapter{Scope, sources and conventions}
+
+\section{Scope}
+
+This blueprint states, with exact hypotheses, every definition and lemma of the
+formal proof specified in plan \S14--\S15 (pp.~15--17): the Schur--Cohn step
+theorem for polynomials with complex coefficients, proved by algebra once
+factorisation over $\C$ is available; its recursion; a structurally recursive
+Boolean checker on lists of Gaussian rationals, with the correctness statement
+that ties it to stability; and Corollaries~1--4 (plan p.~16). It is the C4.B
+deliverable for gate G6 (plan p.~5, Table~1). It is \emph{not} a passed gate:
+G6 also requires the coordination answers of plan p.~16, which do not yet exist.
+
+Only Lemma~A (\ref{lem:A}) is formalised (schur-cohn commit
+\texttt{a907f9910b7736340bd98e31947fdef1747e7149}, file
+\texttt{SchurCohn/LemmaA.lean}). Nothing else in this document has been
+formalised; proofs below are paper proofs written to the level of detail that a
+Lean proof will need. Lemma~A is one lemma of the chain; it is not the theorem.
+
+The statement of every node was type-checked against the schur-cohn pin
+(Lean \texttt{v4.32.2}, mathlib \texttt{905b958}) with \texttt{sorry} proof
+bodies and the definition bodies given here: \texttt{statements/SchurCohnStatements.lean}
+compiles with no errors (\texttt{statements/compile.log}). That is a check of
+well-typedness only; it proves nothing.
+
+Polynomial root stability, which is what every theorem here is about, is
+different from the existence or causality of a stationary stochastic process.
+Section~\ref{sec:bridge-remark} states exactly which bridge is in scope.
+
+\section{Sources}
+
+\begin{itemize}
+\item Working plan, working edition of 27 September 2026, pp.~5, 13, 15--17, 19,
+  21--22 (SHA-256 \texttt{c195cea6\ldots5b3b5a}).
+\item Research repository \texttt{kostadinstoyanovuk/unit-circle} at
+  \texttt{6f9400ea4aba29c3b515f6ab13659efcff572a3f}, file
+  \texttt{audit/FORMAL\_FEASIBILITY.md}.
+\item Formal repository \texttt{kostadinstoyanovuk/schur-cohn} at
+  \texttt{a907f9910b7736340bd98e31947fdef1747e7149}: Lean \texttt{v4.32.2},
+  mathlib \texttt{905b95818eb32af7874a58b427f50c1711a5e96c}.
+\item Prior formalisation \texttt{S-Kamaguchi/ar456-stationarity-lean} at
+  \texttt{da3605efdc3728e87f90284535083a4f1d588ce3}: \texttt{StepDown.lean} and
+  \texttt{AR2.lean} read in full, \texttt{StationarityRegions.lean} read in full,
+  declarations of \texttt{VietaBound.lean} inspected. No licence file; see
+  \texttt{prior-art.md}.
+\item mathlib at the schur-cohn pin (\texttt{905b958}, 2026-07-28) and at
+  master \texttt{c0da404748dcfaa230e6ad5f6599771d01e7ae56} (2026-09-28); Loogle
+  (serving mathlib revision \texttt{b63f6e8}) queried 2026-09-28.
+\end{itemize}
+
+\section{Conventions}\label{sec:conventions}
+
+\begin{itemize}
+\item \textbf{Coefficient ordering.} $p(z)=\sum_{k=0}^{n} a_k z^k$ with
+  $a_k = $ \texttt{p.coeff k} (ascending: index $=$ power), as in mathlib and
+  plan p.~15. Executable lists are ascending too: $[a_0,a_1,\ldots,a_n]$, and
+  \texttt{l.getD k 0} is the coefficient of $z^k$. Kamaguchi's
+  \texttt{φ : Fin p → ℝ} is 0-based in the order of \emph{descending} powers:
+  \texttt{φ i} $=\phi_{i+1}$ multiplies $z^{p-1-i}$ in
+  $z^p-\sum_i \phi_{i+1}z^{p-1-i}$.
+\item \textbf{Formal degree.} Every reciprocal and every Schur transform takes
+  the formal degree $n:\N$ as an explicit argument. Each statement says whether
+  it assumes $\natdeg\, p = n$ (exact) or $\natdeg\, p\le n$ (bound). The
+  leading coefficient at formal degree $n$ is \texttt{p.coeff n}, which equals
+  \texttt{p.leadingCoeff} only under $\natdeg\,p=n$.
+\item \textbf{Conjugate reciprocal.} $\crec{n}{p}$ conjugates every coefficient
+  and then reflects at $n$: \texttt{(p.map (starRingEnd ℂ)).reflect n}. It is
+  never \texttt{Polynomial.reverse}, which reflects at \texttt{natDegree} and so
+  changes the formal degree when $a_0=0$ or after a cancellation
+  (\ref{lem:reverse-trap}). The reciprocal of the Schur transform $q$ is always
+  taken at $n-1$ (plan p.~16, C4.THM trap).
+\item \textbf{Zero polynomial and constants.} The zero polynomial is not stable.
+  A non-zero constant is stable (it has no roots). A polynomial of formal degree
+  $n\ge 1$ whose coefficient $a_n$ is $0$ fails the first test of the recursion.
+\item \textbf{Roots and multiplicity.} Stability quantifies over the root
+  \emph{set}; factorisation and Vieta use the root \emph{multiset}
+  \texttt{p.roots}, which counts multiplicity, so repeated roots need no special
+  case.
+\item \textbf{Norms.} $\nm{z}$ is the complex norm; $\nm{z}^2 =$
+  \texttt{Complex.normSq z} (\texttt{Complex.normSq\_eq\_norm\_sq}). The disc is
+  $D=\{\nm{z}<1\}$; ``outside'' means $\nm{z}\ge 1$.
+\item \textbf{Axiom contract (G7, plan p.~17).} Every declaration listed here
+  must, when formalised, satisfy \texttt{\#print axioms} $\subseteq$
+  \{\texttt{propext}, \texttt{Classical.choice}, \texttt{Quot.sound}\}. No
+  \texttt{sorry}, no \texttt{native\_decide}, no new \texttt{axiom}.
+\end{itemize}
+
+\chapter{Library facts used}
+
+These nodes are existing mathlib declarations. Each name was found in the
+source tree at both the schur-cohn pin \texttt{905b958} and master
+\texttt{c0da404} (2026-09-28). Signatures that differ between the two are
+noted in \texttt{prior-art.md}.
+
+\begin{lemma}[reflection API]\label{ml:reflect}
+\lean{Polynomial.reflect, Polynomial.coeff_reflect, Polynomial.reflect_reflect, Polynomial.reflect_map, Polynomial.reflect_mul, Polynomial.natDegree_reflect_le, Polynomial.eval₂_reflect_mul_pow, Polynomial.reflect_add, Polynomial.reflect_sub, Polynomial.reflect_C_mul, Polynomial.reflect_C, Polynomial.revAt}
+\mathlibok
+For a semiring $R$, $N:\N$ and $f\in R[X]$:
+\texttt{coeff (reflect N f) i = f.coeff (revAt N i)}, where
+$\mathrm{revAt}\,N\,i = N-i$ if $i\le N$ and $=i$ otherwise;
+\texttt{reflect N (reflect N f) = f} (no degree hypothesis);
+\texttt{(f.map φ).reflect N = (f.reflect N).map φ};
+\texttt{reflect (F+G) (f*g) = reflect F f * reflect G g} if
+$\natdeg\,f\le F$ and $\natdeg\,g\le G$;
+$\natdeg(\mathrm{reflect}\,N\,f)\le\max(N,\natdeg\,f)$; and for invertible $x$
+and $\natdeg\,f\le N$:
+\texttt{eval₂ i (⅟x) (reflect N f) * x\^{}N = eval₂ i x f}.
+\end{lemma}
+
+\begin{lemma}[division by $X$]\label{ml:divX}
+\lean{Polynomial.divX, Polynomial.coeff_divX, Polynomial.X_mul_divX_add, Polynomial.natDegree_divX_eq_natDegree_tsub_one}
+\mathlibok
+\texttt{(divX p).coeff n = p.coeff (n+1)}, \texttt{X * divX p + C (p.coeff 0) = p},
+and $\natdeg(\divX\,p)=\natdeg\,p-1$ (truncated subtraction).
+\end{lemma}
+
+\begin{lemma}[factorisation over $\C$]\label{ml:splits}
+\lean{IsAlgClosed.splits, Polynomial.Splits.eq_prod_roots, Polynomial.Splits.eval_eq_prod_roots, IsAlgClosed.card_roots_eq_natDegree, Polynomial.Splits.coeff_zero_eq_leadingCoeff_mul_prod_roots, Polynomial.C_leadingCoeff_mul_prod_multiset_X_sub_C}
+\mathlibok
+$\C$ is algebraically closed (\texttt{Complex.isAlgClosed}), so every
+$p\in\C[X]$ splits; \texttt{p.roots.card = p.natDegree};
+$p = C(\mathrm{lc}\,p)\prod_{w\in\roots p}(X-C\,w)$;
+$p(x)=\mathrm{lc}\,p\cdot\prod_{w\in\roots p}(x-w)$; and
+$a_0 = (-1)^{\natdeg\,p}\,\mathrm{lc}\,p\,\prod_{w\in\roots p} w$.
+The algebraic closedness of $\C$ is proved in mathlib via Liouville's theorem;
+``algebraic'' in this blueprint means that the Schur argument itself uses no
+continuity of roots and no contour integral once factorisation is available
+(plan p.~15; \texttt{FORMAL\_FEASIBILITY.md}).
+\end{lemma}
+
+\begin{lemma}[norm and product API]\label{ml:norm}
+\lean{Complex.mul_conj, Complex.normSq_eq_norm_sq, Complex.norm_conj, Complex.norm_mul, Multiset.prod_map_le_prod_map₀, Polynomial.eval_multiset_prod, Polynomial.coeff_map, Polynomial.eval_map}
+\mathlibok
+$z\,\cj z = \mathrm{normSq}\,z$ (as a complex number);
+$\mathrm{normSq}\,z=\nm z^2$; $\nm{\cj z}=\nm z$; norms are multiplicative;
+for a multiset $s$ and $0\le f\le g$ on $s$, $\prod_s f\le\prod_s g$;
+evaluation commutes with multiset products; \texttt{coeff (p.map f) n = f (coeff p n)}.
+\end{lemma}
+
+\chapter{Definitions and the conjugate-reciprocal API (C4.D)}
+
+\begin{definition}[conjugate reciprocal at formal degree $n$]\label{def:conjRecip}
+\lean{SchurCohn.conjRecip}
+\uses{ml:reflect}
+For $n:\N$ and $p\in\C[X]$,
+\[ \crec{n}{p} := \mathrm{reflect}\;n\;(\mathrm{map}\;\cj{\,\cdot\,}\;p),
+\qquad\texttt{conjRecip n p := (p.map (starRingEnd ℂ)).reflect n}. \]
+If $\natdeg\,p\le n$ then $\crec{n}{p}(z)=\sum_{k=0}^{n}\cj{a_{n-k}}\,z^k
+= z^n\,\cj{p(1/\cj z)}$ for $z\ne0$ (plan p.~15).
+\end{definition}
+
+\begin{definition}[stability]\label{def:IsStable}
+\lean{SchurCohn.IsStable}
+$\stable(p) :\iff p\ne 0 \wedge \forall z\in\C,\ p(z)=0\Rightarrow \nm z<1$.
+\end{definition}
+
+\begin{lemma}[coefficient formula]\label{lem:conjRecip-coeff}
+\lean{SchurCohn.coeff_conjRecip, SchurCohn.coeff_conjRecip_of_le, SchurCohn.coeff_conjRecip_of_lt}
+\uses{def:conjRecip}
+For all $n,k$ and $p$: $\coeff{\crec{n}{p}}{k}=\cj{\coeff{p}{\mathrm{revAt}\,n\,k}}$.
+Hence if $k\le n$ then $\coeff{\crec{n}{p}}{k}=\cj{a_{n-k}}$; if $k>n$ and
+$\natdeg\,p\le n$ then $\coeff{\crec{n}{p}}{k}=0$.
+\end{lemma}
+\begin{proof}
+\uses{ml:reflect, ml:norm}
+\texttt{coeff\_reflect} then \texttt{coeff\_map}. For $k>n$,
+$\mathrm{revAt}\,n\,k=k>\natdeg\,p$, so $a_k=0$ and $\cj 0=0$.
+\end{proof}
+
+\begin{lemma}[constant and top coefficients]\label{lem:conjRecip-ends}
+\lean{SchurCohn.conjRecip_coeff_zero, SchurCohn.conjRecip_coeff_self}
+\uses{def:conjRecip}
+For all $n$ and $p$ (no degree hypothesis):
+$\coeff{\crec{n}{p}}{0}=\cj{a_n}$ and $\coeff{\crec{n}{p}}{n}=\cj{a_0}$.
+\end{lemma}
+\begin{proof}
+\uses{lem:conjRecip-coeff}
+$\mathrm{revAt}\,n\,0=n$ and $\mathrm{revAt}\,n\,n=0$.
+\end{proof}
+
+\begin{lemma}[involution at fixed degree]\label{lem:conjRecip-invol}
+\lean{SchurCohn.conjRecip_conjRecip}
+\uses{def:conjRecip}
+For all $n$ and $p$: $\crec{n}{(\crec{n}{p})}=p$. No degree hypothesis is needed.
+\end{lemma}
+\begin{proof}
+\uses{ml:reflect}
+By \texttt{reflect\_map}, $\crec{n}{p}=\mathrm{map}\,\cj{\cdot}\,(\mathrm{reflect}\,n\,p)$.
+Then $\crec{n}{(\crec{n}{p})}=\mathrm{reflect}\,n\,(\mathrm{map}\,\cj\cdot\,(\mathrm{map}\,\cj\cdot\,(\mathrm{reflect}\,n\,p)))
+=\mathrm{reflect}\,n\,(\mathrm{reflect}\,n\,p)=p$, using $\cj{\cj z}=z$
+(\texttt{Polynomial.map\_map}, \texttt{starRingEnd\_self\_apply}) and
+\texttt{reflect\_reflect}.
+\end{proof}
+
+\begin{lemma}[degree bound]\label{lem:conjRecip-natDegree}
+\lean{SchurCohn.natDegree_conjRecip_le}
+\uses{def:conjRecip}
+If $\natdeg\,p\le n$ then $\natdeg\,\crec{n}{p}\le n$. (Equality fails when $a_0=0$.)
+\end{lemma}
+\begin{proof}
+\uses{ml:reflect}
+\texttt{natDegree\_reflect\_le} and $\natdeg(\mathrm{map}\,\cj\cdot\,p)=\natdeg\,p$
+(conjugation is injective).
+\end{proof}
+
+\begin{lemma}[additivity and scalars]\label{lem:conjRecip-linear}
+\lean{SchurCohn.conjRecip_add, SchurCohn.conjRecip_sub, SchurCohn.conjRecip_C_mul, SchurCohn.conjRecip_zero, SchurCohn.conjRecip_C}
+\uses{def:conjRecip}
+For all $n$: $\crec{n}{(p+r)}=\crec{n}{p}+\crec{n}{r}$,
+$\crec{n}{(p-r)}=\crec{n}{p}-\crec{n}{r}$,
+$\crec{n}{(C c\cdot p)}=C\cj c\cdot\crec{n}{p}$, $\crec{n}{0}=0$, and
+$\crec{0}{(C c)}=C\cj c$.
+\end{lemma}
+\begin{proof}
+\uses{ml:reflect}
+\texttt{Polynomial.map\_add}, \texttt{map\_sub}, \texttt{map\_mul}, \texttt{map\_C};
+\texttt{reflect\_add}, \texttt{reflect\_sub}, \texttt{reflect\_C\_mul}, \texttt{reflect\_C} with $N=0$.
+\end{proof}
+
+\begin{lemma}[shift]\label{lem:conjRecip-X-mul}
+\lean{SchurCohn.conjRecip_X_mul}
+\uses{def:conjRecip}
+If $n\ge1$ and $\natdeg\,q\le n-1$ then $\crec{n}{(X\cdot q)}=\crec{n-1}{q}$.
+\end{lemma}
+\begin{proof}
+\uses{lem:conjRecip-coeff}
+Compare coefficients. For $k\le n-1$:
+$\coeff{\crec{n}{(Xq)}}{k}=\cj{\coeff{Xq}{n-k}}=\cj{\coeff q{n-1-k}}=\coeff{\crec{n-1}{q}}{k}$
+(here $n-k\ge1$). For $k=n$: $\cj{\coeff{Xq}{0}}=0$ and $\coeff{\crec{n-1}q}{n}=0$
+since $n>n-1\ge\natdeg\,q$. For $k>n$ both are $0$ by \ref{lem:conjRecip-coeff}
+($\natdeg(Xq)\le n$).
+\end{proof}
+
+\begin{lemma}[multiplicativity]\label{lem:conjRecip-mul}
+\lean{SchurCohn.conjRecip_mul}
+\uses{def:conjRecip}
+If $\natdeg\,f\le F$ and $\natdeg\,g\le G$ then
+$\crec{F+G}{(fg)}=\crec{F}{f}\cdot\crec{G}{g}$.
+\end{lemma}
+\begin{proof}
+\uses{ml:reflect}
+\texttt{Polynomial.map\_mul}, then \texttt{reflect\_mul} (the degree
+hypotheses transfer through \texttt{map} because conjugation is injective).
+\end{proof}
+
+\begin{lemma}[evaluation]\label{lem:conjRecip-eval}
+\lean{SchurCohn.eval_conjRecip}
+\uses{def:conjRecip}
+If $\natdeg\,p\le n$ and $z\ne0$ then $\crec{n}{p}(z)=z^n\,\cj{p\big((\cj z)^{-1}\big)}$.
+\end{lemma}
+\begin{proof}
+\uses{ml:reflect, ml:norm}
+Apply \texttt{eval₂\_reflect\_mul\_pow} to $f=\mathrm{map}\,\cj\cdot\,p$ with
+$x=z^{-1}$ (invertible since $z\ne0$, with \texttt{⅟x = z}): $\crec np(z)\,z^{-n}=f(z^{-1})$.
+Finally $f(w)=\cj{p(\cj w)}$ for all $w$ (\texttt{eval\_map}, \texttt{eval₂\_at\_apply}
+and conjugation being a ring homomorphism), and $\cj{z^{-1}}=(\cj z)^{-1}$.
+\end{proof}
+
+\begin{lemma}[equality on the unit circle]\label{lem:conjRecip-circle}
+\lean{SchurCohn.norm_eval_conjRecip_of_norm_eq_one}
+\uses{lem:conjRecip-eval}
+If $\natdeg\,p\le n$ and $\nm z=1$ then $\nm{\crec{n}{p}(z)}=\nm{p(z)}$.
+\end{lemma}
+\begin{proof}
+\uses{ml:norm}
+$\nm z=1$ gives $z\ne0$ and $z\cj z=1$, so $(\cj z)^{-1}=z$. By
+\ref{lem:conjRecip-eval}, $\nm{\crec np(z)}=\nm z^n\,\nm{\cj{p(z)}}=\nm{p(z)}$.
+\end{proof}
+
+\begin{lemma}[why \texttt{reverse} is not used]\label{lem:reverse-trap}
+\lean{SchurCohn.conjRecip_ne_reverse}
+\uses{def:conjRecip}
+(i) $\crec{2}{X}=X$ but \texttt{(X.map (starRingEnd ℂ)).reverse = 1}.
+(ii) For $p=X^2-X$ (so $a_0=0$), $\mathrm{reverse}(\mathrm{reverse}\,p)=X-1\ne p$,
+whereas $\crec{2}{(\crec{2}{p})}=p$ by \ref{lem:conjRecip-invol}.
+This records the plan's warning (p.~16, C4.D) as checkable statements; the
+definitions above never mention \texttt{reverse}.
+\end{lemma}
+\begin{proof}
+\uses{ml:reflect}
+Direct computation: $\natdeg\,X=1$, so \texttt{reverse} reflects at $1$ and sends
+$X$ to $1$; reflecting $X$ at $2$ gives $X^{2-1}=X$. For (ii),
+$\mathrm{reverse}(X^2-X)=1-X$ has $\natdeg=1$, and reversing again reflects at
+$1$ and gives $-1+X$.
+\end{proof}
+
+\begin{lemma}[basic facts on stability]\label{lem:stable-basic}
+\lean{SchurCohn.not_isStable_zero, SchurCohn.isStable_C, SchurCohn.isStable_iff_of_natDegree_eq_zero, SchurCohn.isStable_C_mul_iff, SchurCohn.isStable_iff_roots}
+\uses{def:IsStable}
+(i) $\neg\stable(0)$. (ii) If $c\ne0$ then $\stable(C c)$.
+(iii) If $\natdeg\,p=0$ then $\stable(p)\iff a_0\ne0$.
+(iv) If $c\ne0$ then $\stable(C c\cdot p)\iff\stable(p)$.
+(v) $\stable(p)\iff p\ne0\wedge\forall w\in\roots p,\ \nm w<1$.
+\end{lemma}
+\begin{proof}
+(i) Every $z$ is a root of $0$; take $z=1$. (ii) $C c$ has no roots.
+(iii) $\natdeg\,p=0$ gives $p=C\,a_0$; use (i),(ii). (iv) $(Cc\cdot p)(z)=c\,p(z)$
+and $C c\cdot p\ne0\iff p\ne0$. (v) \texttt{Polynomial.mem\_roots} for $p\ne0$.
+\end{proof}
+
+\chapter{Lemmas A, B and C (C4.LEM)}
+
+\begin{lemma}[A --- the Blaschke identity]\label{lem:A}
+\lean{SchurCohn.lemmaA, SchurCohn.lemmaA_normSq}
+\leanok
+For all $\alpha,z\in\C$:
+$\nm{z-\alpha}^2-\nm{1-\cj\alpha z}^2=(\nm z^2-1)(1-\nm\alpha^2)$.
+\end{lemma}
+\begin{proof}
+\leanok
+Expand both squares; the cross terms $\mp2\,\mathrm{Re}(\cj\alpha z)$ cancel,
+leaving $\nm z^2+\nm\alpha^2-1-\nm\alpha^2\nm z^2$ (plan p.~15). Formalised at
+schur-cohn \texttt{a907f99} (\texttt{SchurCohn/LemmaA.lean}) by
+\texttt{simp} with the \texttt{Complex.normSq} component lemmas and \texttt{ring};
+axioms \texttt{propext}, \texttt{Classical.choice}, \texttt{Quot.sound}
+(schur-cohn \texttt{evidence/lemmaA-build.log}; re-checked on 2026-09-28 with
+\texttt{lake env lean SchurCohn/LemmaA.lean}, \texttt{statements/lemmaA-axioms.log}).
+\end{proof}
+
+\begin{lemma}[A$'$ --- one factor]\label{lem:A-factor}
+\lean{SchurCohn.norm_one_sub_conj_mul_le, SchurCohn.norm_one_sub_conj_mul_lt, SchurCohn.norm_one_sub_conj_mul_eq}
+\uses{lem:A}
+Let $\nm\alpha<1$ and $\nm z\ge1$. Then $0<\nm{z-\alpha}$ and
+$\nm{1-\cj\alpha z}\le\nm{z-\alpha}$. If moreover $\nm z>1$ the inequality is
+strict. If $\nm z=1$ it is an equality, for every $\alpha\in\C$ (no bound on
+$\nm\alpha$ is needed for this case).
+\end{lemma}
+\begin{proof}
+\uses{ml:norm}
+$\nm{z-\alpha}\ge\nm z-\nm\alpha>0$. By Lemma~A the difference of squares is
+$(\nm z^2-1)(1-\nm\alpha^2)$, which is $\ge0$, $>0$ or $=0$ according as
+$\nm z\ge1$, $\nm z>1$ or $\nm z=1$, since $1-\nm\alpha^2>0$. Pass from squares
+to norms with \texttt{pow\_le\_pow\_iff\_left₀} / \texttt{sq\_eq\_sq'} (both
+sides are non-negative).
+\end{proof}
+
+\begin{lemma}[factorisation at the exact degree]\label{lem:factor}
+\lean{SchurCohn.eval_eq_prod_roots_of_natDegree}
+\uses{ml:splits}
+If $\natdeg\,p=n$ then $\#\roots p=n$, $a_n=\mathrm{lc}\,p$, and for all $z$:
+$p(z)=a_n\prod_{w\in\roots p}(z-w)$ (product over the multiset, with multiplicity).
+\end{lemma}
+\begin{proof}
+\texttt{IsAlgClosed.card\_roots\_eq\_natDegree} and
+\texttt{Splits.eval\_eq\_prod\_roots} applied to \texttt{IsAlgClosed.splits p};
+\texttt{coeff\_natDegree} for $a_n=\mathrm{lc}\,p$.
+\end{proof}
+
+\begin{lemma}[factorisation of the reciprocal]\label{lem:conjRecip-factor}
+\lean{SchurCohn.conjRecip_eq_prod_roots}
+\uses{def:conjRecip, lem:factor}
+If $\natdeg\,p=n$ then
+$\crec{n}{p}=C\,\cj{a_n}\cdot\prod_{w\in\roots p}\big(1-C\,\cj w\cdot X\big)$;
+hence $\crec{n}{p}(z)=\cj{a_n}\prod_{w\in\roots p}(1-\cj w z)$ for all $z$.
+The hypothesis is $\natdeg\,p=n$, not $\le n$: if $\natdeg\,p=d<n$ then
+$\crec np=X^{n-d}\crec dp$ and the formula acquires a factor $z^{n-d}$.
+\end{lemma}
+\begin{proof}
+\uses{lem:conjRecip-mul, lem:conjRecip-linear, ml:splits}
+Write $p=C a_n\cdot\prod_{w}(X-Cw)$ (\texttt{Splits.eq\_prod\_roots}). Induct on
+the multiset (\texttt{Multiset.induction\_on}) with \ref{lem:conjRecip-mul},
+splitting the degree as $n=0+1+\cdots+1$: $\crec{0}{(Ca_n)}=C\cj{a_n}$ and
+$\crec{1}{(X-Cw)}=\mathrm{reflect}\,1\,(X-C\cj w)=1-C\cj w\cdot X$. The degree
+hypotheses of \ref{lem:conjRecip-mul} hold because each factor has degree
+$\le$ its share. (Alternative route for $z\ne0$: \ref{lem:conjRecip-eval} with
+\ref{lem:factor}, since $z^n\cj{(\cj z^{-1}-w)}=z^n(z^{-1}-\cj w)$ and
+$\prod$ has $n$ factors; $z=0$ is then treated separately. Lemma~B needs only
+$\nm z\ge1$.)
+\end{proof}
+
+\begin{lemma}[B --- a stable polynomial dominates its reciprocal outside the disc]\label{lem:B}
+\lean{SchurCohn.lemmaB}
+\uses{def:IsStable, def:conjRecip}
+Let $\stable(p)$ and $\natdeg\,p=n$ (any $n\ge0$). If $\nm z\ge1$ then
+$p(z)\ne0$ and $\nm{\crec{n}{p}(z)}\le\nm{p(z)}$.
+\end{lemma}
+\begin{proof}
+\uses{lem:factor, lem:conjRecip-factor, lem:A-factor, lem:stable-basic, ml:norm}
+$a_n=\mathrm{lc}\,p\ne0$ since $p\ne0$. Every $w\in\roots p$ has $\nm w<1$
+(\ref{lem:stable-basic}(v)). By \ref{lem:factor} and \ref{lem:conjRecip-factor},
+$\nm{p(z)}=\nm{a_n}\prod_w\nm{z-w}$ and
+$\nm{\crec np(z)}=\nm{\cj{a_n}}\prod_w\nm{1-\cj wz}$, with
+$\nm{\cj{a_n}}=\nm{a_n}$. By \ref{lem:A-factor} each $\nm{z-w}>0$ and
+$0\le\nm{1-\cj wz}\le\nm{z-w}$; \texttt{Multiset.prod\_map\_le\_prod\_map₀}
+gives the product inequality, and $p(z)\ne0$ because no factor vanishes. For
+$n=0$ the products are empty and both sides equal $\nm{a_0}$; no case split is
+needed. Repeated roots are repeated factors of the multiset product.
+\end{proof}
+
+\begin{lemma}[B, strict form and the circle]\label{lem:B-strict}
+\lean{SchurCohn.lemmaB_strict, SchurCohn.lemmaB_eq_iff}
+\uses{lem:B}
+Let $\stable(p)$ and $\natdeg\,p=n$. If $\nm z=1$ then
+$\nm{\crec np(z)}=\nm{p(z)}$. If $n\ge1$ and $\nm z>1$ then
+$\nm{\crec np(z)}<\nm{p(z)}$. Hence for $n\ge1$ and $\nm z\ge1$: equality
+holds iff $\nm z=1$ (plan p.~15). For $n=0$ equality holds for every $z$, so
+the ``only if'' needs $n\ge1$. The main theorem uses only \ref{lem:B}.
+\end{lemma}
+\begin{proof}
+\uses{lem:conjRecip-circle, lem:A-factor, lem:factor, lem:conjRecip-factor}
+Circle: \ref{lem:conjRecip-circle}. Strict: as in \ref{lem:B}, now with
+$0\le\nm{1-\cj wz}<\nm{z-w}$ for each of the $n\ge1$ factors; a product of $n\ge1$
+strict inequalities between non-negative numbers with positive right-hand sides
+is strict, and $\nm{a_n}>0$. This multiset lemma is to be proved in the project
+(induction on the multiset): the mathlib \texttt{Finset} version is
+\texttt{Finset.prod\_lt\_prod\_of\_nonempty} at the pin but
+\texttt{Finset.prod\_lt\_prod\_of\_nonempty₀} on master, and the \texttt{Multiset}
+lemma of that name assumes \texttt{MulLeftStrictMono}, which $\R$ does not
+satisfy (\texttt{prior-art.md}, \S2).
+\end{proof}
+
+\begin{lemma}[C --- the constant term]\label{lem:C}
+\lean{SchurCohn.lemmaC}
+\uses{def:IsStable}
+If $\stable(p)$, $\natdeg\,p=n$ and $n\ge1$, then $\nm{a_0}<\nm{a_n}$. (For
+$n=0$ the conclusion is false: $a_0=a_n$.)
+\end{lemma}
+\begin{proof}
+\uses{ml:splits, lem:stable-basic, lem:factor}
+Vieta (\texttt{Splits.coeff\_zero\_eq\_leadingCoeff\_mul\_prod\_roots}):
+$a_0=(-1)^n a_n\prod_{w\in\roots p}w$, so
+$\nm{a_0}=\nm{a_n}\prod_w\nm w$. The multiset has $n\ge1$ elements, each with
+$0\le\nm w<1$, so $\prod_w\nm w<1$ (compatibility lemma: product over a
+non-empty multiset of numbers in $[0,1)$ is $<1$; a zero constant term
+$a_0=0$ means some $w=0$ and the product is $0$). As $\nm{a_n}>0$,
+$\nm{a_0}<\nm{a_n}$.
+\end{proof}
+
+\chapter{The Schur transform and the main theorem (C4.THM)}
+
+\begin{definition}[Schur transform at formal degree $n$]\label{def:schur}
+\lean{SchurCohn.schur}
+\uses{def:conjRecip, ml:divX}
+\[ \Sch_n(p):=\divX\big(C\,\cj{a_n}\cdot p-C\,a_0\cdot\crec{n}{p}\big),\qquad a_k=\coeff pk. \]
+In Lean: \texttt{schur n p := (C (conj (p.coeff n)) * p - C (p.coeff 0) * conjRecip n p).divX}.
+It uses \texttt{p.coeff n}, not \texttt{p.leadingCoeff}, so it is defined at
+the formal degree. Plan p.~15 writes $zq(z)=\cj{a_n}p(z)-a_0p^*(z)$.
+\end{definition}
+
+\begin{lemma}[cancellation of the constant term]\label{lem:schur-constant-cancel}
+\lean{SchurCohn.coeff_zero_schurNumerator}
+\uses{def:schur}
+For all $n$ and $p$: the constant coefficient of
+$r:=C\cj{a_n}\,p-C a_0\,\crec np$ is $\cj{a_n}a_0-a_0\cj{a_n}=0$.
+\end{lemma}
+\begin{proof}
+\uses{lem:conjRecip-ends}
+$\coeff{\crec np}0=\cj{a_n}$ (\ref{lem:conjRecip-ends}); commutativity of $\C$.
+\end{proof}
+
+\begin{lemma}[the defining identity]\label{lem:schur-X-mul}
+\lean{SchurCohn.X_mul_schur}
+\uses{def:schur}
+For all $n$ and $p$: $X\cdot\Sch_n(p)=C\cj{a_n}\cdot p-C a_0\cdot\crec np$.
+\end{lemma}
+\begin{proof}
+\uses{lem:schur-constant-cancel, ml:divX}
+\texttt{X\_mul\_divX\_add} with $\coeff r0=0$ and $C\,0=0$.
+\end{proof}
+
+\begin{lemma}[coefficients of $q$]\label{lem:schur-coeff}
+\lean{SchurCohn.coeff_schur}
+\uses{def:schur}
+Let $q=\Sch_n(p)$. For all $k$:
+$\coeff qk=\cj{a_n}a_{k+1}-a_0\,\cj{\coeff p{\mathrm{revAt}\,n\,(k+1)}}$.
+If $\natdeg\,p\le n$ and $k+1\le n$, then
+$\coeff qk=\cj{a_n}a_{k+1}-a_0\cj{a_{n-1-k}}$; if $\natdeg\,p\le n$ and
+$k+1>n$, then $\coeff qk=0$.
+\end{lemma}
+\begin{proof}
+\uses{ml:divX, lem:conjRecip-coeff}
+\texttt{coeff\_divX}, \texttt{coeff\_sub}, \texttt{coeff\_C\_mul},
+\ref{lem:conjRecip-coeff}. For $k+1>n$: $a_{k+1}=0$ and the reciprocal
+coefficient is $0$.
+\end{proof}
+
+\begin{lemma}[degree and leading coefficient of $q$]\label{lem:schur-lead}
+\lean{SchurCohn.natDegree_schur_le, SchurCohn.coeff_schur_pred, SchurCohn.natDegree_schur_eq, SchurCohn.schur_ne_zero}
+\uses{def:schur}
+Let $n\ge1$ and $\natdeg\,p\le n$, $q=\Sch_n(p)$. Then (i)
+$\natdeg\,q\le n-1$; (ii) $\coeff q{n-1}=\big(\nm{a_n}^2-\nm{a_0}^2:\R\big)$
+cast to $\C$; (iii) if $\nm{a_0}<\nm{a_n}$ then $\natdeg\,q=n-1$, $q\ne0$ and
+$\coeff q{n-1}$ is a positive real. (iv) If $\nm{a_0}=\nm{a_n}$ then
+$\coeff q{n-1}=0$, so $\natdeg\,q<n-1$ or $q=0$: e.g.\ $p=z^2-1$ gives $q=0$.
+For $n=1$: $q=C\big(\nm{a_1}^2-\nm{a_0}^2\big)$ is a constant.
+\end{lemma}
+\begin{proof}
+\uses{lem:schur-coeff, ml:norm}
+(i) \ref{lem:schur-coeff}, vanishing for $k\ge n$. (ii) $k=n-1$:
+$\cj{a_n}a_n-a_0\cj{a_0}=\mathrm{normSq}\,a_n-\mathrm{normSq}\,a_0$
+(\texttt{Complex.mul\_conj}, \texttt{Complex.conj\_mul'}),
+then \texttt{Complex.normSq\_eq\_norm\_sq}. (iii) (ii) is non-zero, so
+$\natdeg\,q\ge n-1$ (\texttt{le\_natDegree\_of\_ne\_zero}); combine with (i).
+(iv) Direct.
+\end{proof}
+
+\begin{lemma}[the reciprocal of $q$ at degree $n-1$]\label{lem:qstar-identity}
+\lean{SchurCohn.conjRecip_schur}
+\uses{def:schur, def:conjRecip}
+If $n\ge1$ and $\natdeg\,p\le n$ then
+\[ \crec{n-1}{\Sch_n(p)}=C a_n\cdot\crec np-C\cj{a_0}\cdot p . \]
+No hypothesis on $\nm{a_0}$ versus $\nm{a_n}$ is needed; the reciprocal of $q$ is
+taken at $n-1$ even when $\natdeg\,q<n-1$.
+\end{lemma}
+\begin{proof}
+\uses{lem:schur-X-mul, lem:conjRecip-X-mul, lem:conjRecip-linear, lem:conjRecip-invol, lem:schur-lead}
+Apply $\crec n{\cdot}$ to \ref{lem:schur-X-mul}. Left:
+$\crec n{(Xq)}=\crec{n-1}q$ by \ref{lem:conjRecip-X-mul}, using
+$\natdeg\,q\le n-1$ (\ref{lem:schur-lead}(i)). Right, by
+\ref{lem:conjRecip-linear}:
+$C\cj{\cj{a_n}}\crec np-C\cj{a_0}\,\crec n{(\crec np)}
+=C a_n\crec np-C\cj{a_0}\,p$ (\ref{lem:conjRecip-invol}). Cancellation check:
+the $z^n$ coefficient of the right side is $a_n\cj{a_0}-\cj{a_0}a_n=0$, as it
+must be for a polynomial of formal degree $n-1$.
+\end{proof}
+
+\begin{lemma}[the displayed identity]\label{lem:displayed-identity}
+\lean{SchurCohn.schur_identity}
+\uses{lem:schur-X-mul, lem:qstar-identity}
+If $n\ge1$ and $\natdeg\,p\le n$, then with $q=\Sch_n(p)$:
+\[ C\big(\nm{a_n}^2-\nm{a_0}^2\big)\cdot p = C a_n\cdot X\cdot q+C a_0\cdot\crec{n-1}q. \]
+\end{lemma}
+\begin{proof}
+\uses{ml:norm}
+Multiply \ref{lem:schur-X-mul} by $C a_n$:
+$C a_n X q=C\,\mathrm{normSq}(a_n)\,p-C(a_0a_n)\crec np$. Multiply
+\ref{lem:qstar-identity} by $C a_0$:
+$C a_0\crec{n-1}q=C(a_0a_n)\crec np-C\,\mathrm{normSq}(a_0)\,p$. Add: the
+$\crec np$ terms cancel ($-a_0a_n+a_0a_n=0$) and
+$a_n\cj{a_n}-a_0\cj{a_0}=\nm{a_n}^2-\nm{a_0}^2$ (\texttt{Complex.mul\_conj}).
+In Lean: \texttt{linear\_combination (C a\_n) * h1 + (C a\_0) * h2} after
+rewriting \texttt{C} of products.
+\end{proof}
+
+\begin{lemma}[step, forward direction]\label{lem:step-mp}
+\lean{SchurCohn.isStable_schur_of_isStable}
+\uses{def:IsStable, def:schur}
+Let $n\ge1$, $\natdeg\,p=n$, $\stable(p)$. Then $\nm{a_0}<\nm{a_n}$ and
+$\stable(\Sch_n p)$.
+\end{lemma}
+\begin{proof}
+\uses{lem:C, lem:B, lem:schur-lead, lem:schur-X-mul, ml:norm}
+Lemma~C gives $\nm{a_0}<\nm{a_n}$; \ref{lem:schur-lead}(iii) gives $q\ne0$.
+Let $q(w)=0$ and suppose $\nm w\ge1$. Evaluating \ref{lem:schur-X-mul} at $w$:
+$0=w\,q(w)=\cj{a_n}p(w)-a_0\crec np(w)$, so
+$\nm{a_n}\nm{p(w)}=\nm{a_0}\nm{\crec np(w)}$ (\texttt{norm\_mul},
+\texttt{norm\_conj}). Lemma~B at degree $n$: $p(w)\ne0$ and
+$\nm{\crec np(w)}\le\nm{p(w)}$. Then
+$\nm{a_n}\nm{p(w)}>\nm{a_0}\nm{p(w)}\ge\nm{a_0}\nm{\crec np(w)}$, where the
+strict step uses $\nm{p(w)}>0$. Contradiction; so $\nm w<1$.
+\end{proof}
+
+\begin{lemma}[step, backward direction]\label{lem:step-mpr}
+\lean{SchurCohn.isStable_of_isStable_schur}
+\uses{def:IsStable, def:schur}
+Let $n\ge1$, $\natdeg\,p=n$, $\nm{a_0}<\nm{a_n}$ and $\stable(\Sch_n p)$. Then
+$\stable(p)$.
+\end{lemma}
+\begin{proof}
+\uses{lem:displayed-identity, lem:B, lem:schur-lead, ml:norm}
+$p\ne0$ since $\natdeg\,p=n\ge1$. Let $p(z)=0$ and suppose $\nm z\ge1$.
+Evaluating \ref{lem:displayed-identity} at $z$:
+$0=a_n z\,q(z)+a_0\crec{n-1}q(z)$, so
+$\nm{a_n}\nm z\nm{q(z)}=\nm{a_0}\nm{\crec{n-1}q(z)}$. By
+\ref{lem:schur-lead}(iii), $\natdeg\,q=n-1$, so Lemma~B applies to $q$ at
+degree $n-1$: $q(z)\ne0$ and $\nm{\crec{n-1}q(z)}\le\nm{q(z)}$. Then
+$\nm{a_n}\nm z\nm{q(z)}\ge\nm{a_n}\nm{q(z)}>\nm{a_0}\nm{q(z)}\ge\nm{a_0}\nm{\crec{n-1}q(z)}$.
+Contradiction; so $\nm z<1$. Degree one: $n=1$, $q=C c$ with
+$c=\nm{a_1}^2-\nm{a_0}^2>0$, $\natdeg\,q=0$ and $\crec0q=C\cj c$; Lemma~B at
+degree $0$ gives $q(z)=c\ne0$ and $\nm{q^*_0(z)}=\nm{q(z)}$, which is all the
+chain uses (plan p.~15). No separate case is needed.
+\end{proof}
+
+\begin{theorem}[Schur--Cohn step]\label{thm:step}
+\lean{SchurCohn.isStable_iff_schur}
+\uses{def:IsStable, def:schur}
+Let $p\in\C[X]$, $n\ge1$ and $\natdeg\,p=n$. Then
+\[ \stable(p)\iff\nm{a_0}<\nm{a_n}\ \wedge\ \stable(\Sch_n p). \]
+\end{theorem}
+\begin{proof}
+\uses{lem:step-mp, lem:step-mpr}
+\ref{lem:step-mp} and \ref{lem:step-mpr}.
+\end{proof}
+
+\begin{remark}
+Both conjuncts are needed. If $\nm{a_0}>\nm{a_1}$ and $n=1$, then $q$ is a
+non-zero constant, hence stable, while $p$ has its root $-a_0/a_1$ outside the
+disc. If $\nm{a_0}=\nm{a_n}$ the first conjunct fails: this covers roots on the
+unit circle such as $z^2-1$, $(z-1)^2$ and $z^2+i$.
+\end{remark}
+
+\chapter{The recursion and the executable test (C4.REC)}
+
+\begin{definition}[recursive test on complex polynomials]\label{def:SchurTest}
+\lean{SchurCohn.SchurTest}
+\uses{def:schur}
+By structural recursion on $n:\N$:
+\[ \mathrm{SchurTest}\ 0\ p := (a_0\ne0),\qquad
+\mathrm{SchurTest}\ (n+1)\ p := \nm{a_0}<\nm{a_{n+1}}\ \wedge\ \mathrm{SchurTest}\ n\ (\Sch_{n+1}p). \]
+\end{definition}
+
+\begin{theorem}[the recursion decides stability]\label{thm:SchurTest}
+\lean{SchurCohn.schurTest_iff, SchurCohn.schurTest_iff_of_natDegree_eq}
+\uses{def:SchurTest, def:IsStable}
+For all $n$ and all $p$ with $\natdeg\,p\le n$:
+$\mathrm{SchurTest}\ n\ p\iff\natdeg\,p=n\wedge\stable(p)$.
+In particular, if $\natdeg\,p=n$ then $\mathrm{SchurTest}\ n\ p\iff\stable(p)$:
+$n$ checks decide stability (plan p.~15, Figure~4).
+\end{theorem}
+\begin{proof}
+\uses{thm:step, lem:schur-lead, lem:stable-basic}
+Induction on $n$, generalising $p$. $n=0$: $\natdeg\,p=0$, so
+\ref{lem:stable-basic}(iii). Step $n+1$, $\natdeg\,p\le n+1$. If
+$\natdeg\,p<n+1$ then $a_{n+1}=0$, the first conjunct $\nm{a_0}<0$ is false and
+the right side is false. If $\natdeg\,p=n+1$: by \ref{thm:step},
+$\stable(p)\iff\nm{a_0}<\nm{a_{n+1}}\wedge\stable(q)$. When
+$\nm{a_0}<\nm{a_{n+1}}$, \ref{lem:schur-lead}(iii) gives $\natdeg\,q=n$ and the
+induction hypothesis gives $\mathrm{SchurTest}\ n\ q\iff\stable(q)$; otherwise
+both sides are false. After the first step the base test is implied by the last
+strict inequality (the constant is $\nm{\cdot}^2-\nm{\cdot}^2>0$); it matters
+only for input of formal degree $0$.
+\end{proof}
+
+\begin{definition}[Gaussian integers and rationals]\label{def:GZ}
+\lean{SchurCohn.GZ, SchurCohn.GQ, SchurCohn.GZ.toC, SchurCohn.GQ.toC, SchurCohn.GZ.normSq, SchurCohn.GQ.normSq}
+\texttt{structure GZ where re : ℤ; im : ℤ} and \texttt{structure GQ where re : ℚ; im : ℚ},
+each with $0$, $+$, $-$, $\times$, conjugation and
+$\mathrm{normSq}(a)=\mathrm{re}^2+\mathrm{im}^2$ ($\in\Z$, resp.\ $\Q$) defined
+by plain (non-\texttt{irreducible}) functions on the components, and casts
+\texttt{toC a := ⟨a.re, a.im⟩ : ℂ}.
+Design decision (see \texttt{HANDOFF.md}): the checker's arithmetic runs on
+\texttt{GZ}. The Schur step uses only $+,-,\times$ and conjugation, never
+division, so integer input stays integral; and at Lean \texttt{v4.32.2}
+\texttt{Rat.add}, \texttt{Rat.sub}, \texttt{Rat.mul} and \texttt{Rat.inv} are
+\texttt{@[irreducible]} (\texttt{src/Init/Data/Rat/Basic.lean} at tag \texttt{v4.32.2},
+commit \texttt{f3b06c7}: \texttt{mul} lines 166--168, \texttt{inv} 188--191,
+\texttt{add} 255--259, \texttt{sub} 291--294), which the elaborator's
+\texttt{decide} does not unfold. Gaussian rationals enter through
+\ref{def:checkQ}, which clears denominators by a positive integer.
+\end{definition}
+
+\begin{lemma}[casts are ring homomorphisms]\label{lem:GZ-cast}
+\lean{SchurCohn.GZ.toC_add, SchurCohn.GZ.toC_sub, SchurCohn.GZ.toC_mul, SchurCohn.GZ.toC_conj, SchurCohn.GZ.normSq_toC, SchurCohn.GZ.toC_eq_zero, SchurCohn.GQ.toC_mul, SchurCohn.GQ.normSq_toC}
+\uses{def:GZ}
+$\mathrm{toC}$ commutes with $0,+,-,\times$ and conjugation;
+$\mathrm{Complex.normSq}(\mathrm{toC}\,a)=(\mathrm{normSq}\,a:\R)$; and
+$\mathrm{toC}\,a=0\iff\mathrm{normSq}\,a=0\iff a=0$. Likewise for \texttt{GQ}.
+\end{lemma}
+\begin{proof}
+\texttt{Complex.ext} and \texttt{push\_cast}; \texttt{Complex.normSq\_mk};
+a sum of two integer squares vanishes iff both do.
+\end{proof}
+
+\begin{definition}[list to polynomial]\label{def:toPoly}
+\lean{SchurCohn.toPoly, SchurCohn.toPolyQ}
+\uses{def:GZ}
+By structural recursion (Horner form, ascending list):
+$\mathrm{toPoly}\,[\,]:=0$ and $\mathrm{toPoly}\,(a::t):=C(\mathrm{toC}\,a)+X\cdot\mathrm{toPoly}\,t$.
+\texttt{toPolyQ} is the same for \texttt{GQ}.
+\end{definition}
+
+\begin{lemma}[coefficients of a list polynomial]\label{lem:toPoly-coeff}
+\lean{SchurCohn.coeff_toPoly, SchurCohn.natDegree_toPoly_le}
+\uses{def:toPoly}
+$\coeff{\mathrm{toPoly}\,l}{k}=\mathrm{toC}(l.\mathrm{getD}\ k\ 0)$ and
+$\natdeg(\mathrm{toPoly}\,l)\le l.\mathrm{length}-1$. In particular
+$\coeff{\mathrm{toPoly}\,l}0=\mathrm{toC}(l.\mathrm{headD}\ 0)$ and, for
+$l.\mathrm{length}=n+1$, $\coeff{\mathrm{toPoly}\,l}n=\mathrm{toC}(l.\mathrm{getLastD}\ 0)$.
+Trailing zeros are kept: $[1,0]$ has formal degree $1$ and $\natdeg=0$.
+\end{lemma}
+\begin{proof}
+\uses{lem:GZ-cast}
+Induction on $l$ with \texttt{coeff\_add}, \texttt{coeff\_C},
+\texttt{coeff\_X\_mul}; \texttt{List.getD\_cons\_succ}.
+\end{proof}
+
+\begin{definition}[Schur step on lists]\label{def:schurList}
+\lean{SchurCohn.schurList}
+\uses{def:GZ}
+For $l=[a_0,\ldots,a_n]$:
+\[ \mathrm{schurList}\,l := \big(\mathrm{zipWith}\ (\lambda\,a\,b.\ \cj{a_n}\,a-a_0\,\cj b)\ \ l\ \ l.\mathrm{reverse}\big).\mathrm{tail}, \]
+with $a_0=l.\mathrm{headD}\ 0$, $a_n=l.\mathrm{getLastD}\ 0$. The $k$-th entry of
+the \texttt{zipWith} is $r_k=\cj{a_n}a_k-a_0\cj{a_{n-k}}$; \texttt{tail} drops
+$r_0=0$. Only \texttt{List.zipWith}, \texttt{List.reverse}, \texttt{List.tail},
+\texttt{headD}, \texttt{getLastD} are used: all structurally recursive.
+\end{definition}
+
+\begin{lemma}[the list step is the Schur transform]\label{lem:toPoly-schurList}
+\lean{SchurCohn.length_schurList, SchurCohn.toPoly_schurList}
+\uses{def:schurList, def:toPoly, def:schur}
+$(\mathrm{schurList}\,l).\mathrm{length}=l.\mathrm{length}-1$, and if
+$l.\mathrm{length}=n+1$ with $n\ge1$ then
+$\mathrm{toPoly}(\mathrm{schurList}\,l)=\Sch_n(\mathrm{toPoly}\,l)$.
+\end{lemma}
+\begin{proof}
+\uses{lem:toPoly-coeff, lem:schur-coeff, lem:GZ-cast}
+Coefficientwise with \texttt{Polynomial.ext}. For $k<n$ the $k$-th entry is
+$r_{k+1}=\cj{a_n}a_{k+1}-a_0\cj{a_{n-1-k}}$ (\texttt{List.getElem\_zipWith},
+\texttt{List.getElem\_reverse}, \texttt{List.getElem\_tail}), which casts to
+\ref{lem:schur-coeff} (valid as $\natdeg(\mathrm{toPoly}\,l)\le n$). For
+$k\ge n$ both sides are $0$.
+\end{proof}
+
+\begin{definition}[structurally recursive checker]\label{def:check}
+\lean{SchurCohn.checkAux, SchurCohn.check}
+\uses{def:schurList}
+Recursion is structural on the first list, which serves only as a counter of
+remaining steps (a transformed list is not a sub-term of its input, so it
+cannot carry the recursion):
+\begin{verbatim}
+def checkAux : List GZ → List GZ → Bool
+  | [],     l => decide (0 < (l.headD GZ.zero).normSq)
+  | _ :: s, l => decide ((l.headD GZ.zero).normSq < (l.getLastD GZ.zero).normSq)
+                   && checkAux s (schurList l)
+def check : List GZ → Bool
+  | []     => false
+  | a :: s => checkAux s (a :: s)
+\end{verbatim}
+Here \texttt{GZ.zero} $=\langle0,0\rangle$ is the default for empty lists.
+Invariant: $l.\mathrm{length}=s.\mathrm{length}+1$. No well-founded recursion,
+no \texttt{partial}, no \texttt{implemented\_by}.
+\end{definition}
+
+\begin{lemma}[one run of the checker]\label{lem:checkAux}
+\lean{SchurCohn.checkAux_iff}
+\uses{def:check, def:SchurTest}
+For all $s,l$ with $l.\mathrm{length}=s.\mathrm{length}+1$:
+$\mathrm{checkAux}\ s\ l=\mathrm{true}\iff\mathrm{SchurTest}\ (s.\mathrm{length})\ (\mathrm{toPoly}\,l)$.
+\end{lemma}
+\begin{proof}
+\uses{lem:toPoly-coeff, lem:toPoly-schurList, lem:GZ-cast}
+Induction on $s$, generalising $l$. Base: $l=[c]$, $0<\mathrm{normSq}\,c\iff
+c\ne0\iff\coeff{\mathrm{toPoly}\,l}0\ne0$. Step: \texttt{Bool.and\_eq\_true},
+\texttt{decide\_eq\_true\_iff}; the comparison
+$\mathrm{normSq}\,a_0<\mathrm{normSq}\,a_n$ in $\Z$ casts to
+$\nm{a_0}^2<\nm{a_n}^2$, equivalent to $\nm{a_0}<\nm{a_n}$ for non-negative
+norms; \ref{lem:toPoly-schurList} and the induction hypothesis (the new list has
+length $s.\mathrm{length}$).
+\end{proof}
+
+\begin{theorem}[correctness of the executable checker]\label{thm:check}
+\lean{SchurCohn.check_iff}
+\uses{def:check, def:IsStable}
+For every $l:\mathrm{List}\ \mathrm{GZ}$:
+\[ \mathrm{check}\,l=\mathrm{true}\iff l\ne[\,]\ \wedge\ \natdeg(\mathrm{toPoly}\,l)=l.\mathrm{length}-1\ \wedge\ \stable(\mathrm{toPoly}\,l). \]
+\end{theorem}
+\begin{proof}
+\uses{lem:checkAux, thm:SchurTest, lem:toPoly-coeff}
+$l=[\,]$: both sides false. $l=a::s$: \ref{lem:checkAux} with
+\ref{thm:SchurTest} at $n=s.\mathrm{length}$, using $\natdeg\le n$ from
+\ref{lem:toPoly-coeff}.
+\end{proof}
+
+\begin{definition}[Gaussian-rational front end]\label{def:checkQ}
+\lean{SchurCohn.denProd, SchurCohn.toGZ, SchurCohn.checkQ}
+\uses{def:check, def:GZ}
+$\mathrm{denProd}\,l\in\N_{>0}$ is the product of \texttt{a.re.den * a.im.den}
+over $l$ (structural). $\mathrm{toGZ}\,l$ maps each $a$ to
+$\langle a.\mathrm{re.num}\cdot(D/a.\mathrm{re.den}),\ a.\mathrm{im.num}\cdot(D/a.\mathrm{im.den})\rangle$
+with $D=\mathrm{denProd}\,l$ (exact division). $\mathrm{checkQ}\,l:=\mathrm{check}(\mathrm{toGZ}\,l)$.
+Only \texttt{Rat.num}, \texttt{Rat.den} (structure projections) and
+\texttt{Nat}/\texttt{Int} arithmetic are used.
+\end{definition}
+
+\begin{theorem}[correctness on Gaussian rationals]\label{thm:checkQ}
+\lean{SchurCohn.toPoly_toGZ, SchurCohn.checkQ_iff}
+\uses{def:checkQ, def:IsStable}
+$\mathrm{toPoly}(\mathrm{toGZ}\,l)=C(D:\C)\cdot\mathrm{toPolyQ}\,l$ with
+$D=\mathrm{denProd}\,l>0$, lengths are preserved, and
+\[ \mathrm{checkQ}\,l=\mathrm{true}\iff l\ne[\,]\ \wedge\ \natdeg(\mathrm{toPolyQ}\,l)=l.\mathrm{length}-1\ \wedge\ \stable(\mathrm{toPolyQ}\,l). \]
+\end{theorem}
+\begin{proof}
+\uses{thm:check, lem:stable-basic, lem:GZ-cast}
+$a=\mathrm{num}/\mathrm{den}$ and $\mathrm{den}\mid D$ give
+$\mathrm{toC}(\mathrm{toGZ}\ a)=D\cdot\mathrm{toC}\,a$; then \ref{thm:check},
+\ref{lem:stable-basic}(iv) and \texttt{natDegree\_C\_mul} ($D\ne0$).
+\end{proof}
+
+\begin{theorem}[pilot example, computed by the kernel]\label{thm:pilot}
+\lean{SchurCohn.pilot_check, SchurCohn.pilot_isStable}
+\uses{def:check, def:IsStable}
+(i) $\mathrm{check}\ [\langle650,0\rangle,\langle-1336,0\rangle,\langle1000,0\rangle]=\mathrm{true}$,
+proved by \texttt{decide}.
+(ii) $\stable\big(X^2-C(1.336)\cdot X+C(0.650)\big)$ in $\C[X]$, i.e.\
+$X^2-\tfrac{167}{125}X+\tfrac{13}{20}$.
+Hand trace (checked in exact arithmetic by
+\texttt{checks/list\_checker\_mirror.py}): step~1 tests
+$\tfrac{169}{400}<1$ and gives $q=-\tfrac{1169}{2500}+\tfrac{231}{400}z$
+(i.e.\ $0.5775z-0.4676$); step~2 tests
+$\tfrac{1366561}{6250000}<\tfrac{53361}{160000}$ and gives the constant
+$\tfrac{11485649}{100000000}\ne0$. The Gaussian-integer list is the same
+polynomial scaled by $1000$.
+This certifies the stated rational polynomial only: not the unrounded fitted
+parameters, and not any physical property of the series it was fitted to.
+\end{theorem}
+\begin{proof}
+\uses{thm:check, lem:stable-basic}
+(i) \texttt{decide}: \texttt{check} is structurally recursive and uses only
+\texttt{Int}/\texttt{Nat} arithmetic, so the kernel reduces it; no
+\texttt{native\_decide}. (ii) \ref{thm:check} gives stability of
+$1000X^2-1336X+650$ (its \texttt{toPoly}, up to \texttt{norm\_num}), and
+\ref{lem:stable-basic}(iv) with $c=1/1000$. Not run in this session:
+whether \texttt{decide} completes within default limits is an open check.
+\end{proof}
+
+\chapter{Corollaries (C4.COR)}
+
+\begin{corollary}[1: the AR(2) triangle]\label{cor:1}
+\lean{SchurCohn.ar2_triangle}
+\uses{def:IsStable}
+For real $\phi_1,\phi_2$:
+$\stable\big(X^2-C\phi_1X-C\phi_2\big)\iff\phi_1+\phi_2<1\wedge\phi_2-\phi_1<1\wedge\phi_2>-1$
+(coefficients cast to $\C$). This is the triangle of S0.1 (plan p.~16) and the
+predicate \texttt{St2} of Kamaguchi's \texttt{AR2.lean} with
+\texttt{φ 0} $=\phi_1$, \texttt{φ 1} $=\phi_2$.
+\end{corollary}
+\begin{proof}
+\uses{thm:SchurTest, lem:schur-coeff}
+$a_2=1$, $a_1=-\phi_1$, $a_0=-\phi_2$. Step~1 needs $\nm{\phi_2}<1$ and gives
+$q=(1-\phi_2^2)z-\phi_1(1+\phi_2)$ (\ref{lem:schur-coeff}:
+$r_1=a_1-a_0\cj{a_1}=-\phi_1-\phi_1\phi_2$, $r_2=1-\phi_2^2$). Step~2 needs
+$\nm{\phi_1}(1+\phi_2)<1-\phi_2^2$, i.e.\ $\nm{\phi_1}<1-\phi_2$ after dividing
+by $1+\phi_2>0$; the base test then holds. Real algebra: $\nm{\phi_2}<1\wedge
+\nm{\phi_1}<1-\phi_2\iff\phi_1+\phi_2<1\wedge\phi_2-\phi_1<1\wedge\phi_2>-1$
+(the first two give $\phi_2<1$).
+\end{proof}
+
+\begin{lemma}[real quadratics]\label{lem:quad}
+\lean{SchurCohn.real_quadratic_iff}
+\uses{def:IsStable}
+For real $b_0,b_1,b_2$ with $b_2>0$:
+$\stable(Cb_2X^2+Cb_1X+Cb_0)\iff\nm{b_0}<b_2\wedge\nm{b_1}<b_2+b_0$.
+\end{lemma}
+\begin{proof}
+\uses{thm:SchurTest, lem:schur-coeff}
+Step~1: $\nm{b_0}<b_2$, $q=(b_2^2-b_0^2)z+b_1(b_2-b_0)$. Step~2:
+$\nm{b_1}(b_2-b_0)<b_2^2-b_0^2\iff\nm{b_1}<b_2+b_0$ (divide by $b_2-b_0>0$).
+\end{proof}
+
+\begin{corollary}[2: the cubic, Jury 1964]\label{cor:2}
+\lean{SchurCohn.jury_cubic}
+\uses{def:IsStable}
+For real $a_0,a_1,a_2$ and $p=X^3+Ca_2X^2+Ca_1X+Ca_0$: $\stable(p)\iff
+p(1)>0\wedge p(-1)<0\wedge\nm{a_0}<1\wedge\nm{a_0^2-1}>\nm{a_0a_2-a_1}$.
+\end{corollary}
+\begin{proof}
+\uses{thm:step, lem:quad, lem:schur-coeff, lem:stable-basic}
+Step~1 ($n=3$, $a_3=1$) needs $\nm{a_0}<1$ and gives
+$q=(1-a_0^2)z^2+(a_2-a_0a_1)z+(a_1-a_0a_2)$, a real quadratic with
+$b_2=1-a_0^2>0$. By \ref{lem:quad}, $q$ is stable iff (a)
+$\nm{a_1-a_0a_2}<1-a_0^2$ and (b) $\nm{a_2-a_0a_1}<1-a_0^2+a_1-a_0a_2$. Under
+$\nm{a_0}<1$, (a) is $\nm{a_0^2-1}>\nm{a_0a_2-a_1}$. For (b), the two one-sided
+inequalities factor exactly:
+$(1-a_0^2+a_1-a_0a_2)-(a_2-a_0a_1)=(1+a_0)(1-a_0+a_1-a_2)=-(1+a_0)\,p(-1)$ and
+$(1-a_0^2+a_1-a_0a_2)+(a_2-a_0a_1)=(1-a_0)(1+a_0+a_1+a_2)=(1-a_0)\,p(1)$.
+Since $1\pm a_0>0$, (b) $\iff p(-1)<0\wedge p(1)>0$. Checked in exact
+arithmetic on 20{,}000 seeded random cubics by \texttt{checks/list\_checker\_mirror.py}
+(a design check, not a proof); the plan's AT-19 (p.~21) is separate.
+\end{proof}
+
+\begin{definition}[AR characteristic polynomial; Kamaguchi's predicates restated]\label{def:arPoly}
+\lean{SchurCohn.arPoly, SchurCohn.IsStationaryK, SchurCohn.phiDownK}
+\uses{def:IsStable}
+For $\phi:\mathrm{Fin}\ m\to\R$:
+$\mathrm{arPoly}\,\phi:=X^m-\sum_{i}C(\phi_i)\,X^{m-1-i}$. This is the same
+polynomial as \texttt{StTopology.charPoly} (Kamaguchi, \texttt{VietaBound.lean}
+lines 29--30 at \texttt{da3605e}). \texttt{IsStationaryK} and \texttt{phiDownK}
+restate, with attribution and his commit hash, his \texttt{IsStationary}
+(\texttt{StationarityRegions.lean} lines 75--76) and \texttt{phiDownGen}
+(\texttt{StepDown.lean} lines 64--65):
+$\mathrm{IsStationaryK}\,\phi:\iff\forall\alpha:\C,\ \alpha^m=\sum_i\phi_i\alpha^{m-1-i}\Rightarrow\nm\alpha<1$ and
+$\mathrm{phiDownK}\,\phi\ i:=(\phi_{i}+\phi_{n}\phi_{n-1-i})/(1-\phi_n^2)$ for
+$\phi:\mathrm{Fin}(n+1)\to\R$, $i:\mathrm{Fin}\,n$ (0-based; \texttt{Fin.last n}
+$=n$, \texttt{Fin.rev i} $=n-1-i$). These are root predicates on
+coefficients; no stochastic process occurs in them.
+\end{definition}
+
+\begin{lemma}[bridge to the root predicate]\label{lem:ar-bridge}
+\lean{SchurCohn.isStationaryK_iff_isStable}
+\uses{def:arPoly}
+For all $m$ and $\phi$: $\mathrm{IsStationaryK}\,\phi\iff\stable(\mathrm{arPoly}\,\phi)$.
+(For $m=0$ both hold: $\mathrm{arPoly}=1$.)
+\end{lemma}
+\begin{proof}
+\uses{lem:stable-basic}
+$\mathrm{arPoly}\,\phi$ is monic of degree $m$, hence non-zero; its roots are the
+$\alpha$ in the defining equation (\texttt{eval\_sub}, \texttt{eval\_finset\_sum}).
+\end{proof}
+
+\begin{lemma}[Schur transform of an AR polynomial]\label{lem:schur-arPoly}
+\lean{SchurCohn.schur_arPoly}
+\uses{def:arPoly, def:schur}
+Let $m=n+1\ge1$, $\phi:\mathrm{Fin}\,m\to\R$, $k=\phi_{n}$ (last coefficient) and
+$\nm k<1$. Then $\Sch_m(\mathrm{arPoly}\,\phi)=C(1-k^2)\cdot\mathrm{arPoly}(\mathrm{phiDownK}\,\phi)$.
+\end{lemma}
+\begin{proof}
+\uses{lem:schur-coeff}
+Ascending coefficients: $a_m=1$, $a_{m-j}=-\phi_{j-1}$ ($1\le j\le m$, 0-based
+$\phi$), so $a_0=-k$. By \ref{lem:schur-coeff}, $r_m=1-k^2$ and for
+$1\le t\le m-1$: $r_t=a_t+k\,a_{m-t}=-(\phi_{m-1-t}+k\,\phi_{t-1})$. The
+coefficient of $z^{m-1-j}$ ($1\le j\le m-1$) is thus
+$-(\phi_{j-1}+k\phi_{m-1-j})=-(1-k^2)\,\mathrm{phiDownK}\,\phi\,(j-1)$, since
+$\mathrm{Fin.rev}(j-1)=n-j=m-1-j$. Plan p.~16:
+$\psi_i=(\phi_i+\phi_m\phi_{m-i})/(1-\phi_m^2)$ in 1-based indexing.
+\end{proof}
+
+\begin{corollary}[3: Kamaguchi's real step-down]\label{cor:3}
+\lean{SchurCohn.isStable_arPoly_iff_stepDown, SchurCohn.isStationaryK_iff_stepDown}
+\uses{def:arPoly}
+For $n\ge0$ and $\phi:\mathrm{Fin}(n+1)\to\R$:
+$\stable(\mathrm{arPoly}\,\phi)\iff\nm{\phi_n}<1\wedge\stable(\mathrm{arPoly}(\mathrm{phiDownK}\,\phi))$,
+and therefore, for $0<n$,
+$\mathrm{IsStationaryK}\,\phi\iff\nm{\phi_{\mathrm{last}}}<1\wedge\mathrm{IsStationaryK}(\mathrm{phiDownK}\,\phi)$,
+which is the statement of Kamaguchi's \texttt{StTopology.isStationary\_iff\_stepDown\_gen}
+(\texttt{StepDown.lean} lines 433--444 at \texttt{da3605e}; plan p.~16, AT-20).
+The derivation here also covers $n=0$; Kamaguchi's statement assumes $0<n$.
+\end{corollary}
+\begin{proof}
+\uses{thm:step, lem:schur-arPoly, lem:ar-bridge, lem:stable-basic, lem:C}
+$\natdeg(\mathrm{arPoly}\,\phi)=n+1$, $a_0=-\phi_n$, $a_{n+1}=1$, so the first
+conjunct of \ref{thm:step} is $\nm{\phi_n}<1$. If it holds,
+\ref{lem:schur-arPoly} and \ref{lem:stable-basic}(iv) with $c=1-\phi_n^2\ne0$
+turn the second conjunct into $\stable(\mathrm{arPoly}(\mathrm{phiDownK}\,\phi))$;
+if it fails both sides are false. Transfer with \ref{lem:ar-bridge}. Equality of
+\texttt{IsStationaryK}/\texttt{phiDownK} with Kamaguchi's own declarations is a
+separate compatibility check (\texttt{open-obligations.md}, O-COR-3).
+\end{proof}
+
+\begin{corollary}[4: Paper II's region lemma]\label{cor:4}
+\lean{SchurCohn.spectralPeak_imp_complexRoots}
+For real $\phi_1,\phi_2$: if $\phi_2<0$ and $\nm{\phi_1}(1-\phi_2)<-4\phi_2$ then
+$\phi_1^2+4\phi_2<0$ (plan p.~16; region $\mathcal C_S\subset\mathcal C_R$ of
+\S12, p.~13). Strictness of the inclusion: $(\phi_1,\phi_2)=(1,-0.3)$ has
+$\phi_1^2+4\phi_2=-0.2<0$ but $\nm{\phi_1}(1-\phi_2)=1.3>1.2=-4\phi_2$.
+\end{corollary}
+\begin{proof}
+Pure real algebra, independent of the Schur theorem. $1-\phi_2>1>0$ gives
+$\nm{\phi_1}<-4\phi_2/(1-\phi_2)$, so
+$\phi_1^2<16\phi_2^2/(1-\phi_2)^2\le-4\phi_2$; the last step is
+$-4\phi_2\le(1-\phi_2)^2\iff(1+\phi_2)^2\ge0$ after multiplying by
+$(1-\phi_2)^2/(-4\phi_2)>0$. Expected in Lean: \texttt{nlinarith} with
+\texttt{sq\_nonneg (1 + φ₂)}, \texttt{abs\_nonneg}, \texttt{sq\_abs}.
+\end{proof}
+
+\section{What the bridge is and is not}\label{sec:bridge-remark}
+
+\begin{remark}
+Everything above is about the location of polynomial roots. Kamaguchi's
+\texttt{IsStationary} is a name for a root predicate on real coefficients
+(\texttt{StationarityRegions.lean} lines 70--76); it mentions no process,
+probability space or innovation. The C4.COR ``bridge to time series'' (plan
+p.~17) is therefore, in scope, only \ref{lem:ar-bridge}: the equivalence of two
+root predicates. A theorem that an AR($p$) recursion driven by white noise has a
+causal, weakly stationary solution iff the roots of
+$z^p-\phi_1z^{p-1}-\cdots-\phi_p$ lie in $D$ is a different statement: it needs a
+two-sided time index, finite-variance innovations, and the causal/weak
+stationarity notions, and without causality ``stationary'' does not imply roots
+in $D$ (non-causal stationary solutions exist when no root lies on the circle).
+It is not part of this blueprint, and no node here may be cited as a stochastic
+existence or causality result.
+\end{remark}
