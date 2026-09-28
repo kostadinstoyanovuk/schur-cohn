@@ -1,0 +1,5 @@
+# statement conformance, 2026-09-28 19:13:18 UTC
+$ python3 checks/gen_conformance.py SchurCohnStatements.lean  (C4.B 20d4440, sha256 98397a5f6852c87212a4c8d2b73baf3ec7589703e613185b331ad9b4937a463a)
+31 statements: coeff_conjRecip coeff_conjRecip_of_le coeff_conjRecip_of_lt conjRecip_coeff_zero conjRecip_coeff_self conjRecip_conjRecip natDegree_conjRecip_le conjRecip_add conjRecip_sub conjRecip_C_mul conjRecip_zero conjRecip_C conjRecip_X_mul conjRecip_mul eval_conjRecip norm_eval_conjRecip_of_norm_eq_one conjRecip_ne_reverse not_isStable_zero isStable_C isStable_iff_of_natDegree_eq_zero isStable_C_mul_iff isStable_iff_roots norm_one_sub_conj_mul_le norm_one_sub_conj_mul_lt norm_one_sub_conj_mul_eq eval_eq_prod_roots_of_natDegree conjRecip_eq_prod_roots lemmaB lemmaB_strict lemmaB_eq_iff lemmaC
+$ lake env lean checks/Conformance.lean
+exit 0

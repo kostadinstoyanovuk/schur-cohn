@@ -6,10 +6,14 @@ autoregressive roots and time-series stability.
 The current repository establishes a reproducible Lean environment with
 arithmetic and polynomial smoke examples, and proves Lemma A of the programme
 plan (the Blaschke identity) in `SchurCohn/LemmaA.lean` as the foundations
-exercise F6. It does not yet contain a Schur–Cohn
-result, a stability definition or a programme theorem. Substantive formal
-development follows the programme's blueprint and coordination requirements;
-formal proof gates G6 and G7 remain open.
+exercise F6. Following the blueprint in `blueprint/`, it also contains the
+definitions and conjugate-reciprocal API of work package C4.D
+(`SchurCohn/Defs.lean`, `ConjRecip.lean`, `Stable.lean`) and Lemmas A–C of
+C4.LEM (`LemmaAFactor.lean`, `Factor.lean`, `LemmaB.lean`, `LemmaC.lean`, with
+`MultisetProd.lean`). The Schur–Cohn step (the main theorem), the recursion and
+the corollaries are not yet formalised; `node-status.md` lists every blueprint
+node. Formal work started under D-022 of the research repository's DECISIONS.md
+after both coordination messages were posted (D-027, D-030); formal proof gates G6 and G7 remain open.
 
 ## Build
 
@@ -21,8 +25,15 @@ With the pinned toolchain available, set `MATHLIB_NO_CACHE_ON_UPDATE=1` before
 dependency resolution, then run:
 
 ```text
-lake exe cache get Mathlib.Algebra.Polynomial.Eval.Defs Mathlib.Analysis.Complex.Norm
+lake exe cache get Mathlib.Algebra.Polynomial.Eval.Defs Mathlib.Analysis.Complex.Norm \
+  Mathlib.Algebra.Polynomial.Reverse Mathlib.Algebra.Polynomial.Inductions \
+  Mathlib.Algebra.Polynomial.Roots Mathlib.Algebra.Polynomial.BigOperators \
+  Mathlib.Algebra.Order.BigOperators.GroupWithZero.Multiset Mathlib.Data.Real.Basic \
+  Mathlib.Analysis.Complex.Polynomial.Basic
 lake build
+lake env lean checks/Axioms.lean > axioms.log
+python3 checks/check_axioms.py checks/decls.txt axioms.log
+lake env lean checks/Conformance.lean
 ```
 
 The selective cache covers the project's imports and their transitive dependencies.

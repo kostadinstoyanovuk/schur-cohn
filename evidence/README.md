@@ -21,3 +21,11 @@ release timestamps, and SHA-256 digests. Its `original_response_sha256` matches
 the retrieval record in `source-provenance.json`; that digest describes the
 original response, not this extract. Other source snapshots retain their
 upstream content and retrieval details.
+
+`c4-lean/` holds the logs of the build and checks of the C4.D definitions and
+Lemmas A-C, recorded on 2026-09-28 on Linux with Lean v4.32.2 and mathlib
+`905b958` compiled from source: the project build, the axiom audit and its
+allowlist result, statement conformance with the blueprint, boundary cases,
+the mathlib names the proofs use, the blueprint declaration check and the
+search for `sorry`. The hosted check repeats the build, the axiom allowlist and
+the conformance check.

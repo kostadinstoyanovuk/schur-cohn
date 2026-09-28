@@ -17,7 +17,18 @@ jobs:
           lint: 'false'
           use-mathlib-cache: 'false'
           use-github-cache: 'false'
-      - run: lake exe cache get Mathlib.Algebra.Polynomial.Eval.Defs Mathlib.Analysis.Complex.Norm
+      - run: >-
+          lake exe cache get Mathlib.Algebra.Polynomial.Eval.Defs Mathlib.Analysis.Complex.Norm
+          Mathlib.Algebra.Polynomial.Reverse Mathlib.Algebra.Polynomial.Inductions
+          Mathlib.Algebra.Polynomial.Roots Mathlib.Algebra.Polynomial.BigOperators
+          Mathlib.Algebra.Order.BigOperators.GroupWithZero.Multiset Mathlib.Data.Real.Basic
+          Mathlib.Analysis.Complex.Polynomial.Basic
       - run: lake build
       - name: No sorry in project sources
         run: "! grep -rnw --include='*.lean' sorry SchurCohn SchurCohn.lean"
+      - name: Axiom allowlist (propext, Classical.choice, Quot.sound)
+        run: |
+          lake env lean checks/Axioms.lean > axioms.log
+          python3 checks/check_axioms.py checks/decls.txt axioms.log
+      - name: Statement conformance with the C4.B blueprint statements
+        run: lake env lean checks/Conformance.lean

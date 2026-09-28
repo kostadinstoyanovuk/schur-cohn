@@ -1,0 +1,136 @@
+# 2026-09-28 19:12:33 UTC
+$ lake env lean checks/MathlibNames.lean
+@Polynomial.reflect : {R : Type u_1} → [inst : Semiring R] → ℕ → Polynomial R → Polynomial R
+@Polynomial.coeff_reflect : ∀ {R : Type u_1} [inst : Semiring R] (N : ℕ) (f : Polynomial R) (i : ℕ),
+  (Polynomial.reflect N f).coeff i = f.coeff ((Polynomial.revAt N) i)
+@Polynomial.reflect_map : ∀ {R : Type u_1} [inst : Semiring R] {S : Type u_2} [inst_1 : Semiring S] (f : R →+* S)
+  (p : Polynomial R) (n : ℕ), Polynomial.reflect n (Polynomial.map f p) = Polynomial.map f (Polynomial.reflect n p)
+@Polynomial.reflect_reflect : ∀ {R : Type u_1} [inst : Semiring R] {N : ℕ} {p : Polynomial R},
+  Polynomial.reflect N (Polynomial.reflect N p) = p
+@Polynomial.reflect_mul : ∀ {R : Type u_1} [inst : Semiring R] (f g : Polynomial R) {F G : ℕ},
+  f.natDegree ≤ F →
+    g.natDegree ≤ G → Polynomial.reflect (F + G) (f * g) = Polynomial.reflect F f * Polynomial.reflect G g
+@Polynomial.eval₂_reflect_mul_pow : ∀ {R : Type u_1} [inst : Semiring R] {S : Type u_2} [inst_1 : CommSemiring S]
+  (i : R →+* S) (x : S) [inst_2 : Invertible x] (N : ℕ) (f : Polynomial R),
+  f.natDegree ≤ N → Polynomial.eval₂ i (⅟x) (Polynomial.reflect N f) * x ^ N = Polynomial.eval₂ i x f
+@Polynomial.reflect_sub : ∀ {R : Type u_1} [inst : Ring R] (f g : Polynomial R) (N : ℕ),
+  Polynomial.reflect N (f - g) = Polynomial.reflect N f - Polynomial.reflect N g
+@Polynomial.reflect_C : ∀ {R : Type u_1} [inst : Semiring R] (r : R) (N : ℕ),
+  Polynomial.reflect N (Polynomial.C r) = Polynomial.C r * Polynomial.X ^ N
+@Polynomial.reflect_monomial : ∀ {R : Type u_1} [inst : Semiring R] (N n : ℕ),
+  Polynomial.reflect N (Polynomial.X ^ n) = Polynomial.X ^ (Polynomial.revAt N) n
+@Polynomial.reflect_one_X : ∀ {R : Type u_1} [inst : Semiring R], Polynomial.reflect 1 Polynomial.X = 1
+@Polynomial.reflect_one : ∀ {R : Type u_1} [inst : Semiring R] (n : ℕ), Polynomial.reflect n 1 = Polynomial.X ^ n
+Polynomial.revAt : ℕ → ℕ ↪ ℕ
+@Polynomial.revAt_le : ∀ {N i : ℕ}, i ≤ N → (Polynomial.revAt N) i = N - i
+@Polynomial.revAt_eq_self_of_lt : ∀ {N i : ℕ}, N < i → (Polynomial.revAt N) i = i
+@Polynomial.revAt_invol : ∀ {N i : ℕ}, (Polynomial.revAt N) ((Polynomial.revAt N) i) = i
+Polynomial.revAt_zero : ∀ (N : ℕ), (Polynomial.revAt N) 0 = N
+@Polynomial.reverse : {R : Type u_1} → [inst : Semiring R] → Polynomial R → Polynomial R
+@Polynomial.divX : {R : Type u_1} → [inst : Semiring R] → Polynomial R → Polynomial R
+@Polynomial.map : {R : Type u_1} →
+  {S : Type u_2} → [inst : Semiring R] → [inst_1 : Semiring S] → (R →+* S) → Polynomial R → Polynomial S
+@Polynomial.coeff_map : ∀ {R : Type u_1} {S : Type u_2} [inst : Semiring R] {p : Polynomial R} [inst_1 : Semiring S]
+  (f : R →+* S) (n : ℕ), (Polynomial.map f p).coeff n = f (p.coeff n)
+@Polynomial.map_map : ∀ {R : Type u_1} {S : Type u_2} {T : Type u_3} [inst : Semiring R] [inst_1 : Semiring S]
+  (f : R →+* S) [inst_2 : Semiring T] (g : S →+* T) (p : Polynomial R),
+  Polynomial.map g (Polynomial.map f p) = Polynomial.map (g.comp f) p
+@Polynomial.map_id : ∀ {R : Type u_1} [inst : Semiring R] {p : Polynomial R}, Polynomial.map (RingHom.id R) p = p
+@Polynomial.map_mul : ∀ {R : Type u_1} {S : Type u_2} [inst : Semiring R] {p q : Polynomial R} [inst_1 : Semiring S]
+  (f : R →+* S), Polynomial.map f (p * q) = Polynomial.map f p * Polynomial.map f q
+@Polynomial.map_sub : ∀ {R : Type u_1} [inst : Ring R] {p q : Polynomial R} {S : Type u_2} [inst_1 : Ring S]
+  (f : R →+* S), Polynomial.map f (p - q) = Polynomial.map f p - Polynomial.map f q
+@Polynomial.map_X : ∀ {R : Type u_1} {S : Type u_2} [inst : Semiring R] [inst_1 : Semiring S] (f : R →+* S),
+  Polynomial.map f Polynomial.X = Polynomial.X
+@Polynomial.map_C : ∀ {R : Type u_1} {S : Type u_2} {a : R} [inst : Semiring R] [inst_1 : Semiring S] (f : R →+* S),
+  Polynomial.map f (Polynomial.C a) = Polynomial.C (f a)
+@Polynomial.map_one : ∀ {R : Type u_1} {S : Type u_2} [inst : Semiring R] [inst_1 : Semiring S] (f : R →+* S),
+  Polynomial.map f 1 = 1
+@Polynomial.natDegree_map_le : ∀ {R : Type u_1} {S : Type u_2} [inst : Semiring R] [inst_1 : Semiring S] {f : R →+* S}
+  {p : Polynomial R}, (Polynomial.map f p).natDegree ≤ p.natDegree
+@Polynomial.natDegree_le_iff_coeff_eq_zero : ∀ {R : Type u_1} {n : ℕ} [inst : Semiring R] {p : Polynomial R},
+  p.natDegree ≤ n ↔ ∀ (N : ℕ), n < N → p.coeff N = 0
+@Polynomial.coeff_eq_zero_of_natDegree_lt : ∀ {R : Type u_1} [inst : Semiring R] {p : Polynomial R} {n : ℕ},
+  p.natDegree < n → p.coeff n = 0
+@Polynomial.coeff_X_mul : ∀ {R : Type u_1} [inst : Semiring R] (p : Polynomial R) (n : ℕ),
+  (Polynomial.X * p).coeff (n + 1) = p.coeff n
+@Polynomial.coeff_X_mul_zero : ∀ {R : Type u_1} [inst : Semiring R] (p : Polynomial R), (Polynomial.X * p).coeff 0 = 0
+@Polynomial.coeff_C_zero : ∀ {R : Type u_1} {a : R} [inst : Semiring R], (Polynomial.C a).coeff 0 = a
+@Polynomial.coeff_C_of_ne_zero : ∀ {R : Type u_1} {a : R} {n : ℕ} [inst : Semiring R],
+  n ≠ 0 → (Polynomial.C a).coeff n = 0
+@Polynomial.coeff_C_mul : ∀ {R : Type u_1} {a : R} {n : ℕ} [inst : Semiring R] (p : Polynomial R),
+  (Polynomial.C a * p).coeff n = a * p.coeff n
+@Polynomial.coeff_add : ∀ {R : Type u_1} [inst : Semiring R] (p q : Polynomial R) (n : ℕ),
+  (p + q).coeff n = p.coeff n + q.coeff n
+@Polynomial.coeff_sub : ∀ {R : Type u_1} [inst : Ring R] (p q : Polynomial R) (n : ℕ),
+  (p - q).coeff n = p.coeff n - q.coeff n
+@Polynomial.natDegree_sub_eq_left_of_natDegree_lt : ∀ {R : Type u_1} [inst : Ring R] {p q : Polynomial R},
+  q.natDegree < p.natDegree → (p - q).natDegree = p.natDegree
+@Polynomial.natDegree_sub_eq_right_of_natDegree_lt : ∀ {R : Type u_1} [inst : Ring R] {p q : Polynomial R},
+  p.natDegree < q.natDegree → (p - q).natDegree = q.natDegree
+@Polynomial.natDegree_X : ∀ {R : Type u_1} [inst : Semiring R] [Nontrivial R], Polynomial.X.natDegree = 1
+@Polynomial.natDegree_C : ∀ {R : Type u_1} [inst : Semiring R] (a : R), (Polynomial.C a).natDegree = 0
+@Polynomial.natDegree_one : ∀ {R : Type u_1} [inst : Semiring R], Polynomial.natDegree 1 = 0
+@Polynomial.eq_C_of_natDegree_eq_zero : ∀ {R : Type u_1} [inst : Semiring R] {p : Polynomial R},
+  p.natDegree = 0 → p = Polynomial.C (p.coeff 0)
+@Polynomial.C_0 : ∀ {R : Type u_1} [inst : Semiring R], Polynomial.C 0 = 0
+@Polynomial.C_ne_zero : ∀ {R : Type u_1} {a : R} [inst : Semiring R], Polynomial.C a ≠ 0 ↔ a ≠ 0
+@Polynomial.C_eq_zero : ∀ {R : Type u_1} {a : R} [inst : Semiring R], Polynomial.C a = 0 ↔ a = 0
+@Polynomial.leadingCoeff_ne_zero : ∀ {R : Type u_1} [inst : Semiring R] {p : Polynomial R}, p.leadingCoeff ≠ 0 ↔ p ≠ 0
+@Polynomial.eval_map : ∀ {R : Type u_1} {S : Type u_2} [inst : Semiring R] {p : Polynomial R} [inst_1 : Semiring S]
+  (f : R →+* S) (x : S), Polynomial.eval x (Polynomial.map f p) = Polynomial.eval₂ f x p
+@Polynomial.eval₂_at_apply : ∀ {R : Type u_1} [inst : Semiring R] {p : Polynomial R} {S : Type u_2}
+  [inst_1 : Semiring S] (f : R →+* S) (r : R), Polynomial.eval₂ f (f r) p = f (Polynomial.eval r p)
+@Polynomial.eval₂_id : ∀ {R : Type u_1} [inst : Semiring R] {p : Polynomial R} {x : R},
+  Polynomial.eval₂ (RingHom.id R) x p = Polynomial.eval x p
+@Polynomial.eval_multiset_prod : ∀ {R : Type u_1} [inst : CommSemiring R] (s : Multiset (Polynomial R)) (x : R),
+  Polynomial.eval x s.prod = (Multiset.map (Polynomial.eval x) s).prod
+@Polynomial.coeff_zero_eq_eval_zero : ∀ {R : Type u_1} [inst : Semiring R] (p : Polynomial R),
+  p.coeff 0 = Polynomial.eval 0 p
+@Polynomial.roots : {R : Type u_1} → [inst : CommRing R] → [IsDomain R] → Polynomial R → Multiset R
+@Polynomial.mem_roots : ∀ {R : Type u_1} {a : R} [inst : CommRing R] [inst_1 : IsDomain R] {p : Polynomial R},
+  p ≠ 0 → (a ∈ p.roots ↔ p.IsRoot a)
+@IsAlgClosed.card_roots_eq_natDegree : ∀ {k : Type u_1} [inst : Field k] [IsAlgClosed k] {p : Polynomial k},
+  p.roots.card = p.natDegree
+Complex.isAlgClosed : IsAlgClosed ℂ
+@Polynomial.C_leadingCoeff_mul_prod_multiset_X_sub_C : ∀ {R : Type u_1} [inst : CommRing R] [inst_1 : IsDomain R]
+  {p : Polynomial R},
+  p.roots.card = p.natDegree →
+    Polynomial.C p.leadingCoeff * (Multiset.map (fun a => Polynomial.X - Polynomial.C a) p.roots).prod = p
+@Polynomial.natDegree_multiset_prod_X_sub_C_eq_card : ∀ {R : Type u_1} [inst : CommRing R] [Nontrivial R]
+  (s : Multiset R), (Multiset.map (fun x => Polynomial.X - Polynomial.C x) s).prod.natDegree = s.card
+@Polynomial.natDegree_X_sub_C : ∀ {R : Type u_1} [inst : Ring R] [Nontrivial R] (x : R),
+  (Polynomial.X - Polynomial.C x).natDegree = 1
+@Complex.conj_conj : ∀ {R : Type u_1} [inst : CommSemiring R] [inst_1 : StarRing R] (x : R),
+  (starRingEnd R) ((starRingEnd R) x) = x
+Complex.inv_def : ∀ (z : ℂ), z⁻¹ = (starRingEnd ℂ) z * ↑(Complex.normSq z)⁻¹
+Complex.normSq_eq_norm_sq : ∀ (z : ℂ), Complex.normSq z = ‖z‖ ^ 2
+Complex.norm_conj : ∀ (z : ℂ), ‖(starRingEnd ℂ) z‖ = ‖z‖
+Complex.norm_mul : ∀ (z w : ℂ), ‖z * w‖ = ‖z‖ * ‖w‖
+Complex.norm_pow : ∀ (z : ℂ) (n : ℕ), ‖z ^ n‖ = ‖z‖ ^ n
+@norm_mul : ∀ {α : Type u_1} [inst : Norm α] [inst_1 : Mul α] [NormMulClass α] (a b : α), ‖a * b‖ = ‖a‖ * ‖b‖
+@normHom : {α : Type u_1} → [inst : SeminormedRing α] → [NormOneClass α] → [NormMulClass α] → α →*₀ ℝ
+@map_multiset_prod : ∀ {F : Type u_1} {M : Type u_2} {N : Type u_3} [inst : CommMonoid M] [inst_1 : CommMonoid N]
+  [inst_2 : FunLike F M N] [MonoidHomClass F M N] (f : F) (s : Multiset M), f s.prod = (Multiset.map (⇑f) s).prod
+@Multiset.prod_map_le_prod_map₀ : ∀ {R : Type u_1} [inst : CommMonoidWithZero R] [inst_1 : PartialOrder R]
+  [ZeroLEOneClass R] [PosMulMono R] {ι : Type u_2} {s : Multiset ι} (f g : ι → R),
+  (∀ i ∈ s, 0 ≤ f i) → (∀ i ∈ s, f i ≤ g i) → (Multiset.map f s).prod ≤ (Multiset.map g s).prod
+@Multiset.prod_pos : ∀ {R : Type u_1} [inst : CommMonoidWithZero R] [inst_1 : PartialOrder R] [ZeroLEOneClass R]
+  [PosMulStrictMono R] [NeZero 1] {s : Multiset R}, (∀ a ∈ s, 0 < a) → 0 < s.prod
+@norm_sub_norm_le : ∀ {E : Type u_1} [inst : SeminormedAddCommGroup E] (a b : E), ‖a‖ - ‖b‖ ≤ ‖a - b‖
+@pow_le_pow_iff_left₀ : ∀ {M₀ : Type u_1} [inst : MonoidWithZero M₀] [inst_1 : LinearOrder M₀] [PosMulStrictMono M₀]
+  {a b : M₀} {n : ℕ} [MulPosMono M₀], 0 ≤ a → 0 ≤ b → n ≠ 0 → (a ^ n ≤ b ^ n ↔ a ≤ b)
+@pow_lt_pow_iff_left₀ : ∀ {M₀ : Type u_1} [inst : MonoidWithZero M₀] [inst_1 : LinearOrder M₀] [PosMulStrictMono M₀]
+  {a b : M₀} {n : ℕ} [MulPosMono M₀], 0 ≤ a → 0 ≤ b → n ≠ 0 → (a ^ n < b ^ n ↔ a < b)
+@pow_left_inj₀ : ∀ {M₀ : Type u_1} [inst : MonoidWithZero M₀] [inst_1 : LinearOrder M₀] [PosMulStrictMono M₀] {a b : M₀}
+  {n : ℕ} [MulPosMono M₀], 0 ≤ a → 0 ≤ b → n ≠ 0 → (a ^ n = b ^ n ↔ a = b)
+@Multiset.exists_mem_of_ne_zero : ∀ {α : Type u_1} {s : Multiset α}, s ≠ 0 → ∃ a, a ∈ s
+@Multiset.exists_cons_of_mem : ∀ {α : Type u_1} {s : Multiset α} {a : α}, a ∈ s → ∃ t, s = a ::ₘ t
+@Multiset.mem_cons_self : ∀ {α : Type u_1} (a : α) (s : Multiset α), a ∈ a ::ₘ s
+@Multiset.induction_on : ∀ {α : Type u_1} {p : Multiset α → Prop} (s : Multiset α),
+  p 0 → (∀ (a : α) (s : Multiset α), p s → p (a ::ₘ s)) → p s
+@invertibleOfNonzero : {α : Type u_1} → [inst : GroupWithZero α] → {a : α} → a ≠ 0 → Invertible a
+@invOf_eq_inv : ∀ {α : Type u_1} [inst : GroupWithZero α] (a : α) [inst_1 : Invertible a], ⅟a = a⁻¹
+@map_inv₀ : ∀ {G₀ : Type u_1} {G₀' : Type u_2} {F : Type u_3} [inst : GroupWithZero G₀] [inst_1 : GroupWithZero G₀']
+  [inst_2 : FunLike F G₀ G₀'] [MonoidWithZeroHomClass F G₀ G₀'] (f : F) (a : G₀), f a⁻¹ = (f a)⁻¹
+exit 0

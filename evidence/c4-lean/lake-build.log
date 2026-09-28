@@ -1,0 +1,22 @@
+# lake build from a clean project build directory (rm -rf .lake/build; mathlib oleans kept), 2026-09-28 19:13:39 UTC
+# Lean (version 4.32.2, x86_64-unknown-linux-gnu, commit f3b06c705e6c85f5314019d5d3baab0fec5b580c, Release)
+# Lake version 5.0.0-src+f3b06c7 (Lean version 4.32.2)
+# mathlib 905b95818eb32af7874a58b427f50c1711a5e96c (compiled from source in this session; see mathlib-build-stage*.log)
+$ lake build
+ℹ [1677/1751] Built SchurCohn.Smoke (3.4s)
+info: SchurCohn/Smoke.lean:20:0: 'SchurCohn.polynomial_smoke' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: SchurCohn/Smoke.lean:21:0: 'SchurCohn.arithmetic_smoke' does not depend on any axioms
+✔ [1863/1973] Built SchurCohn.MultisetProd (3.1s)
+✔ [2075/2188] Built SchurCohn.Defs (3.5s)
+ℹ [2183/2268] Built SchurCohn.LemmaA (3.6s)
+info: SchurCohn/LemmaA.lean:36:0: 'SchurCohn.lemmaA_normSq' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: SchurCohn/LemmaA.lean:37:0: 'SchurCohn.lemmaA' depends on axioms: [propext, Classical.choice, Quot.sound]
+✔ [2882/2889] Built SchurCohn.Stable (2.0s)
+✔ [2883/2889] Built SchurCohn.ConjRecip (3.8s)
+✔ [2884/2889] Built SchurCohn.LemmaAFactor (3.9s)
+✔ [2885/2889] Built SchurCohn.Factor (3.9s)
+✔ [2886/2889] Built SchurCohn.LemmaB (4.8s)
+✔ [2887/2889] Built SchurCohn.LemmaC (4.9s)
+✔ [2888/2889] Built SchurCohn (2.0s)
+Build completed successfully (2889 jobs).
+exit 0

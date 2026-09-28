@@ -1,0 +1,3 @@
+# 2026-09-28 19:13:24 UTC
+$ lake env lean checks/Boundary.lean
+exit 0

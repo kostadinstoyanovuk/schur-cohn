@@ -1,2 +1,10 @@
 import SchurCohn.Smoke
 import SchurCohn.LemmaA
+import SchurCohn.Defs
+import SchurCohn.ConjRecip
+import SchurCohn.Stable
+import SchurCohn.MultisetProd
+import SchurCohn.LemmaAFactor
+import SchurCohn.Factor
+import SchurCohn.LemmaB
+import SchurCohn.LemmaC
